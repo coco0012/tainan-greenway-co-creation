@@ -1,7 +1,7 @@
 import React from 'react';
 import { Effect } from '@/data/missionData';
 import { StakeholderRole } from '@/data/roles';
-import { User, Users } from 'lucide-react';
+import { User, Activity, Award } from 'lucide-react';
 
 interface CivicIndicatorsProps {
   scores: Effect;
@@ -10,99 +10,104 @@ interface CivicIndicatorsProps {
 
 export const CivicIndicators: React.FC<CivicIndicatorsProps> = ({ scores, playerRole }) => {
   const indicators = [
-    { key: 'residential', label: 'Residential Comfort (居住舒適)', value: scores.residential, color: 'bg-[var(--color-brand-coral)]' },
-    { key: 'commercial', label: 'Commercial Vitality (商業活力)', value: scores.commercial, color: 'bg-[#e59d85]' },
-    { key: 'mobility', label: 'Mobility Efficiency (交通效率)', value: scores.mobility, color: 'bg-[var(--color-brand-blue)]' },
-    { key: 'ecological', label: 'Ecological Comfort (生態棲地)', value: scores.ecological, color: 'bg-[var(--color-brand-green)]' },
-    { key: 'cultural', label: 'Cultural Memory (歷史記憶)', value: scores.cultural, color: 'bg-[#a39485]' },
+    { key: 'residential', label: '居住舒適', value: scores.residential, color: 'bg-[var(--color-brand-coral)]' },
+    { key: 'commercial', label: '商業活力', value: scores.commercial, color: 'bg-amber-400' },
+    { key: 'mobility', label: '交通效率', value: scores.mobility, color: 'bg-[var(--color-brand-blue)]' },
+    { key: 'ecological', label: '生態棲地', value: scores.ecological, color: 'bg-[var(--color-brand-green)]' },
+    { key: 'cultural', label: '歷史記憶', value: scores.cultural, color: 'bg-stone-400' },
   ];
+
+  // Helper to determine active planning tendency
+  const getPlanningTendency = () => {
+    const scoreEntries = Object.entries(scores);
+    let maxVal = -Infinity;
+    let maxKey = '';
+    
+    for (const [key, val] of scoreEntries) {
+      if (val > maxVal) {
+        maxVal = val;
+        maxKey = key;
+      }
+    }
+    
+    const minVal = Math.min(...Object.values(scores));
+    if (maxVal - minVal <= 10) return '多元平衡';
+
+    switch (maxKey) {
+      case 'residential': return '社區安寧優先';
+      case 'commercial': return '街區經濟優先';
+      case 'mobility': return '交通效率優先';
+      case 'ecological': return '生態棲地優先';
+      case 'cultural': return '歷史記憶優先';
+      default: return '多元平衡';
+    }
+  };
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Stakeholder Status Card - Styled as a Planning Permit / Pass */}
-      <div className="bg-white border-arch p-5 bg-opacity-95 relative">
-        <div className="absolute top-0 right-0 font-mono text-[8px] bg-black text-white px-2 py-0.5 uppercase tracking-wider">
-          規劃許可已核准
+      {/* Player Status Card */}
+      <div className="bg-[#FAF8F5] border border-[#e8e5e0] rounded-3xl p-5 shadow-soft">
+        <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-3">
+          <Award size={16} className="text-[var(--color-brand-coral)]" />
+          <span className="text-xs font-bold text-gray-500 font-sans">我的身分卡</span>
         </div>
         
-        <h3 className="anno-label text-gray-500 mb-4 border-b border-black pb-1.5 font-bold">
-          [ 協商小組登記：關係人身分憑證 ]
-        </h3>
-        
-        <div className="mb-4">
-          <div className="text-[10px] font-mono text-gray-500 mb-1 flex items-center gap-1.5 uppercase">
-            <User size={12} className="text-black" /> 主角扮演身分
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-[var(--color-brand-coral)] font-bold shadow-sm shrink-0">
+            {playerRole?.name?.[0]}
           </div>
-          <div className="font-extrabold text-md text-black tracking-tight flex items-center gap-2">
-            <span>{playerRole.name}</span>
-            <span className="text-[9px] font-mono border border-black px-1 py-0.5 bg-gray-50">[已啟用]</span>
+          <div>
+            <div className="text-[10px] text-gray-400 font-mono">[ 當前代表代表市民 ]</div>
+            <div className="font-extrabold text-sm text-gray-800">{playerRole?.name}</div>
           </div>
         </div>
-
-        <div className="border-t border-dashed border-gray-300 pt-3">
-          <div className="text-[10px] font-mono text-gray-500 mb-1 flex items-center gap-1.5 uppercase">
-            <Users size={12} className="text-black" /> 模擬諮詢評審
-          </div>
-          <div className="text-xs text-gray-600 leading-relaxed font-mono">
-            其餘利益關係人身分與言論均由 AI 規劃引擎模擬生成。
-          </div>
+        
+        <div className="mt-4 pt-3 border-t border-dashed border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-mono">
+          <span>規劃傾向：</span>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-[var(--color-brand-green)] font-bold">
+            {getPlanningTendency()}
+          </span>
         </div>
       </div>
 
-      {/* Indicators Card - Styled as a Structural Evaluation Sheet */}
-      <div className="bg-white border-arch p-5 flex-1 bg-opacity-95">
-        <h3 className="anno-label text-gray-500 mb-6 border-b border-black pb-1.5 font-bold">
-          [ 綠園道空間衝擊與民意指標評估 ]
-        </h3>
+      {/* Evaluation Indicators Card */}
+      <div className="bg-[#FAF8F5] border border-[#e8e5e0] rounded-3xl p-5 shadow-soft flex-1 flex flex-col">
+        <div className="flex items-center gap-2 mb-5 border-b border-gray-200 pb-3 shrink-0">
+          <Activity size={16} className="text-[var(--color-brand-blue)]" />
+          <span className="text-xs font-bold text-gray-500 font-sans">綠園道都市指標評估</span>
+        </div>
         
-        <div className="space-y-6">
+        <div className="space-y-5 flex-1 overflow-y-auto pr-1">
           {indicators.map((indicator) => {
-            const isDeficit = indicator.value < 35;
-            const isOptimal = indicator.value > 70;
+            // Calculate change from baseline of 50
+            const change = indicator.value - 50;
 
             return (
-              <div key={indicator.key} className="space-y-1.5">
-                {/* Metric Header */}
+              <div key={indicator.key} className="space-y-1">
+                {/* Metric Title and Value */}
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-gray-900 tracking-tight">{indicator.label}</span>
-                  <div className="flex items-center gap-2">
-                    {isDeficit && (
-                      <span className="font-mono text-[8px] text-red-600 border border-red-600 px-1 py-0.2 bg-red-50 font-bold tracking-widest animate-pulse">
-                        [指標偏低]
+                  <span className="font-bold text-gray-700">{indicator.label}</span>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span className="font-bold text-gray-800">{indicator.value}</span>
+                    {change > 0 && (
+                      <span className="text-[10px] font-bold text-green-600">
+                        (+{change})
                       </span>
                     )}
-                    {isOptimal && (
-                      <span className="font-mono text-[8px] text-green-700 border border-green-700 px-1 py-0.2 bg-green-50 font-bold tracking-widest">
-                        [最佳配置]
+                    {change < 0 && (
+                      <span className="text-[10px] font-bold text-rose-500">
+                        ({change})
                       </span>
                     )}
-                    <span className="font-mono font-bold text-sm bg-gray-100 border border-gray-300 px-1 text-black">{indicator.value}</span>
                   </div>
                 </div>
 
                 {/* Meter Bar */}
-                <div className="relative h-4 w-full bg-gray-50 border border-black">
+                <div className="h-3 w-full bg-gray-200/50 rounded-full overflow-hidden border border-gray-100/50">
                   <div 
-                    className={`h-full ${indicator.color} border-r border-black transition-all duration-300`}
+                    className={`h-full ${indicator.color} rounded-full transition-all duration-300`}
                     style={{ width: `${Math.max(0, Math.min(100, indicator.value))}%` }}
                   />
-                  {/* Tick marker references */}
-                  <div className="absolute inset-0 flex justify-between px-1 text-[8px] font-mono text-gray-400 pointer-events-none select-none items-center mix-blend-difference">
-                    <span>|</span>
-                    <span>|</span>
-                    <span>|</span>
-                    <span>|</span>
-                    <span>|</span>
-                  </div>
-                </div>
-
-                {/* Meter Scale Label */}
-                <div className="flex justify-between font-mono text-[8px] text-gray-400 select-none px-1">
-                  <span>0</span>
-                  <span>25</span>
-                  <span>50</span>
-                  <span>75</span>
-                  <span>100</span>
                 </div>
               </div>
             );

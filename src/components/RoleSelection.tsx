@@ -16,23 +16,20 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
   };
 
   return (
-    <div className="flex-1 flex flex-col p-8 bg-dot-grid h-full overflow-y-auto">
-      <div className="relative max-w-5xl mx-auto w-full bg-white bg-opacity-95 border-arch p-8">
-        {/* Corner Crosshairs */}
-        <div className="absolute -top-2.5 -left-2 text-md font-mono text-gray-500 select-none">+</div>
-        <div className="absolute -top-2.5 -right-2 text-md font-mono text-gray-500 select-none">+</div>
-        <div className="absolute -bottom-3 -left-2 text-md font-mono text-gray-500 select-none">+</div>
-        <div className="absolute -bottom-3 -right-2 text-md font-mono text-gray-500 select-none">+</div>
-
-        {/* Header Block */}
-        <div className="flex justify-between items-center mb-6 border-b border-black pb-2">
-          <span className="anno-label text-gray-500 font-semibold">[ 協商階段：利益關係人身分初始化 ]</span>
-          <span className="anno-label text-gray-500 font-semibold">[ 圖紙編號：RS-01 ]</span>
+    <div className="flex-1 flex flex-col p-8 bg-[var(--color-bg-warm)] h-full overflow-y-auto">
+      <div className="max-w-5xl mx-auto w-full bg-[#FAF8F5] border border-[#e8e5e0] rounded-3xl p-8 shadow-soft">
+        
+        {/* Progress header */}
+        <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+          <span className="px-3 py-1 bg-rose-50 border border-rose-100 text-[var(--color-brand-coral)] text-[10px] font-bold rounded-full font-mono uppercase tracking-wider">
+            [ 協商小組登記：身分初始化 ]
+          </span>
+          <span className="text-xs font-mono text-gray-400">進度：1 / 2 步</span>
         </div>
 
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-black uppercase">選擇您的角色</h1>
-        <p className="text-sm text-gray-600 mb-8 max-w-3xl leading-relaxed">
-          請選擇您要在協商過程中代表的利益關係人角色。您的觀點與價值取向將直接影響綠園道空間策略的權衡與演變。
+        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-gray-900">選擇您的協商身分</h1>
+        <p className="text-sm text-gray-500 mb-8 max-w-3xl leading-relaxed font-sans">
+          請選擇一個您要在協商圓桌中代表的利益關係人角色。您的觀點與核心利益將引導後續綠園道的空間分配與策略權衡。
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -47,20 +44,20 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
         </div>
 
         <div className="flex justify-between items-center border-t border-gray-200 pt-6">
-          <div className="font-mono text-[10px] text-gray-500 uppercase">
-            [ 選擇狀態：{selectedRole ? `就緒 (${selectedRole})` : '等待選擇中'} ]
+          <div className="text-xs font-mono text-gray-400">
+            {selectedRole ? `已選定角色：${roles.find(r => r.id === selectedRole)?.name}` : '請選擇一個卡片以繼續'}
           </div>
           
           <button
             onClick={handleContinue}
             disabled={!selectedRole}
-            className={`px-8 py-3 border-arch font-mono text-sm tracking-wider uppercase font-bold transition-all duration-150 cursor-pointer ${
+            className={`px-8 py-3 rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer ${
               selectedRole 
-                ? 'bg-white hover:bg-[var(--color-brand-blue)] hover:text-white text-black active:translate-y-[1px]' 
-                : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                ? 'bg-[var(--color-brand-blue)] hover:bg-[#5b7a8c] text-white hover:-translate-y-0.5 active:translate-y-0' 
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
             }`}
           >
-            確定身分
+            確定身分，進入簡報
           </button>
         </div>
       </div>

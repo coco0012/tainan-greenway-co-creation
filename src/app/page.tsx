@@ -90,19 +90,21 @@ export default function Home() {
       {currentScreen === 'negotiation' && (
         <div className="flex-1 flex flex-col h-full w-full p-6 max-w-[1600px] mx-auto overflow-hidden">
           {/* Top Panel Banner */}
-          <div className="mb-4 flex justify-between items-center border border-black bg-white p-3.5 select-none shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="font-extrabold text-sm uppercase tracking-wider text-black">
-                台南綠園道共創參與式雙生原型系統
+          <div className="mb-4 flex justify-between items-center border border-[#e8e5e0] bg-[#FAF8F5] p-4 rounded-2xl shadow-soft-sm select-none shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="font-extrabold text-base tracking-tight text-gray-800">
+                台南綠園道共創
               </span>
-              <span className="font-mono text-[9px] text-gray-500 border border-gray-300 px-2 py-0.5 bg-gray-50">
-                [ 階段一：規劃草案協商 ]
+              <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-100 text-[var(--color-brand-blue)] text-[9px] font-bold rounded-full font-mono">
+                參與式數位雙生原型
               </span>
             </div>
-            <div className="flex items-center gap-6 font-mono text-[9px] text-gray-500">
-              <span>都市坐標：22°59'58"N 120°12'43"E</span>
-              <span>比例尺：1:2500</span>
-              <span className="text-[var(--color-brand-coral)] font-bold">[ 模擬協商引擎運作中 ]</span>
+            <div className="flex items-center gap-6 text-xs text-gray-500">
+              <span className="font-mono bg-white px-2 py-1 rounded-lg border border-gray-100">比例尺 1:2500</span>
+              <span className="text-[var(--color-brand-coral)] font-bold flex items-center gap-1.5 animate-pulse">
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-brand-coral)]" />
+                模擬協商進行中
+              </span>
             </div>
           </div>
           
