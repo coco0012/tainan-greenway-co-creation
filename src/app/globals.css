@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green: #7ca897;
+  --color-brand-blue: #7093a8;
+  --color-brand-coral: #e3887c;
+  --color-bg-warm: #fcfbf9;
+  --color-border-gray: #e0ddd9;
+}
+
+:root {
+  --background: var(--color-bg-warm);
+  --foreground: #111111;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  background-position: top left;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom Architectural UI Classes */
+.border-arch {
+  border: 1.5px solid #1a1a1a;
+}
+
+.border-arch-thin {
+  border: 1px solid #2e2e2e;
+}
+
+.border-arch-muted {
+  border: 1px solid #cfcbca;
+}
+
+.border-arch-dashed {
+  border: 1px dashed #7a7a7a;
+}
+
+/* Diagonal line hatching pattern for architectural diagrams */
+.bg-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(0, 0, 0, 0.05) 6px,
+    rgba(0, 0, 0, 0.05) 7px
+  );
+}
+
+.bg-dot-grid {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+/* Monospace small annotations style */
+.anno-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
