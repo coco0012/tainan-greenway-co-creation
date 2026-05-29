@@ -1,13 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-brand-green: #5a7a68;
-  --color-brand-blue: #6b8b9b;
+  --color-brand-green: #8ea63d;
+  --color-brand-blue: #79afd3;
   --color-brand-coral: #d37b70;
-  --color-brand-yellow: #e2a968;
-  --color-bg-warm: #faf5ed;
-  --color-border-warm: #e5dfd5;
-  --color-text-dark: #3a3530;
+  --color-brand-yellow: #f3ce6b;
+  --color-bg-warm: #fcfaf6;
+  --color-border-dark: #1f1d1b;
+  --color-text-dark: #1f1d1b;
 }
 
 :root {
@@ -18,144 +19,124 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: 'Fredoka', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   background-image: 
-    radial-gradient(rgba(140, 130, 110, 0.08) 1.2px, transparent 1.2px);
-  background-size: 20px 20px;
+    radial-gradient(rgba(31, 29, 27, 0.04) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
   background-position: top left;
   background-attachment: fixed;
   min-height: 100vh;
 }
 
-/* Watercolor Style Helpers */
-.shadow-soft {
-  box-shadow: 0 10px 25px -5px rgba(110, 100, 85, 0.06), 0 4px 10px -2px rgba(110, 100, 85, 0.04);
+/* Flat Memphis Outline & Shadow Styles */
+.border-flat {
+  border: 3px solid #1f1d1b;
 }
 
-.shadow-soft-sm {
-  box-shadow: 0 4px 12px -2px rgba(110, 100, 85, 0.05);
+.border-flat-sm {
+  border: 2px solid #1f1d1b;
 }
 
-.shadow-watercolor {
-  box-shadow: 0 8px 30px rgba(90, 80, 70, 0.05), inset 0 0 40px rgba(250, 245, 237, 0.6);
+.shadow-flat-pop {
+  box-shadow: 4px 4px 0px 0px #1f1d1b;
 }
 
-/* Organic Paper and Card Borders */
-.card-watercolor {
-  background-color: #fffdf9;
-  border: 2px solid #e8e2d7;
-  border-radius: 24px 20px 28px 22px / 20px 26px 22px 28px;
+.shadow-flat-pop-lg {
+  box-shadow: 7px 7px 0px 0px #1f1d1b;
 }
 
-.card-watercolor-active {
-  background-color: #fffefa;
-  border: 2.5px solid var(--color-brand-coral);
-  box-shadow: 0 8px 20px rgba(211, 123, 112, 0.08);
+.card-memphis {
+  background-color: #ffffff;
+  border: 3px solid #1f1d1b;
+  box-shadow: 4px 4px 0px 0px #1f1d1b;
+  border-radius: 16px;
 }
 
-/* Blob avatars */
-.blob-avatar-1 {
-  border-radius: 60% 40% 60% 40% / 50% 60% 40% 50%;
-}
-.blob-avatar-2 {
-  border-radius: 45% 55% 40% 60% / 60% 40% 55% 45%;
-}
-.blob-avatar-3 {
-  border-radius: 50% 50% 60% 40% / 40% 60% 40% 60%;
+.card-memphis-active {
+  background-color: #fffdf6;
+  border: 3px solid #1f1d1b;
+  box-shadow: 6px 6px 0px 0px #f3ce6b;
+  border-radius: 16px;
 }
 
-/* RPG Speech Bubble / Dialogue box styles */
-.rpg-speech-bubble {
+/* Olive Green Outline Heading */
+.title-memphis {
+  font-family: 'Fredoka', sans-serif;
+  color: #8ea63d;
+  text-shadow: 
+    -1.5px -1.5px 0 #faf2c5,  
+     1.5px -1.5px 0 #faf2c5,
+    -1.5px  1.5px 0 #faf2c5,
+     1.5px  1.5px 0 #faf2c5,
+     3.5px  3.5px 0px #1f1d1b;
+}
+
+/* Pastel Blob Background Colors */
+.bg-blob-green { background-color: #d0e6d6; }
+.bg-blob-yellow { background-color: #faecd0; }
+.bg-blob-blue { background-color: #d4e5f2; }
+.bg-blob-pink { background-color: #fadbdc; }
+
+/* Blob containers for avatars */
+.blob-avatar-memphis {
+  border: 2.5px solid #1f1d1b;
+  box-shadow: 2.5px 2.5px 0px 0px #1f1d1b;
+}
+
+/* Dialogue Bubble */
+.rpg-dialogue-box {
+  background-color: #ffffff;
+  border: 3px solid #1f1d1b;
+  box-shadow: 3px 3px 0px 0px #1f1d1b;
+  border-radius: 16px;
   position: relative;
-  border-radius: 20px 16px 24px 18px / 18px 22px 18px 24px;
 }
 
-.rpg-speech-bubble::before {
-  content: '';
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-style: solid;
-}
-
-.rpg-speech-bubble-left::before {
-  left: -10px;
-  top: 20px;
-  border-width: 8px 10px 8px 0;
-  border-color: transparent currentColor transparent transparent;
-}
-
-.rpg-speech-bubble-right::before {
-  right: -10px;
-  top: 20px;
-  border-width: 8px 0 8px 10px;
-  border-color: transparent transparent transparent currentColor;
-}
-
-/* Brush-stroke-like progress track */
-.brush-progress-track {
-  background-color: #ede7dc;
-  border-radius: 12px 10px 14px 8px / 8px 12px 10px 14px;
-  border: 1.5px solid #ded6c9;
+/* Classic Flat Progress Track */
+.memphis-progress-track {
+  background-color: #ffffff;
+  border: 2.5px solid #1f1d1b;
+  box-shadow: 2px 2px 0px 0px #1f1d1b;
+  border-radius: 10px;
   overflow: hidden;
 }
 
-.brush-progress-fill {
-  border-radius: 10px 8px 12px 6px / 6px 10px 8px 12px;
-  transition: width 0.6s cubic-bezier(0.1, 0.8, 0.25, 1);
+.memphis-progress-fill {
+  border-right: 2.5px solid #1f1d1b;
+  transition: width 0.4s cubic-bezier(0.1, 0.8, 0.25, 1);
 }
 
-/* Custom Scrollbar for watercolor notebooks */
+/* Flat button transitions */
+.btn-flat-action {
+  background-color: #ffffff;
+  color: #1f1d1b;
+  border: 3px solid #1f1d1b;
+  box-shadow: 3px 3px 0px 0px #1f1d1b;
+  font-weight: 700;
+  transition: all 0.15s ease-out;
+}
+.btn-flat-action:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px 0px #1f1d1b;
+}
+.btn-flat-action:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #1f1d1b;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #f5eedf;
-  border-radius: 4px;
+  background: #f2ede4;
+  border: 2.5px solid #1f1d1b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d8cebd;
-  border-radius: 4px;
+  background: #faecd0;
+  border: 2.5px solid #1f1d1b;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c3b7a3;
-}
-
-/* Adventure RPG Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes floatIndicator {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.4s ease-out forwards;
-}
-
-.animate-float {
-  animation: floatIndicator 2s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spin 8s linear infinite;
+  background: #f3ce6b;
 }

@@ -18,17 +18,17 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
 
   return (
     <div className="flex-1 flex flex-col p-6 bg-[var(--color-bg-warm)] h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto w-full bg-[#FFFDF9] border-2 border-[#e5dfd5] rounded-[30px_25px_35px_28px_/_25px_30px_24px_35px] p-8 shadow-soft">
+      <div className="max-w-5xl mx-auto w-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-8 shadow-flat-pop-lg">
         
         {/* Progress header */}
-        <div className="flex justify-between items-center mb-6 border-b border-[#e5dfd5] pb-4">
-          <span className="px-3 py-1 bg-rose-50 border border-rose-100 text-[var(--color-brand-coral)] text-[10px] font-bold rounded-full font-mono uppercase tracking-wider">
+        <div className="flex justify-between items-center mb-6 border-b-3 border-[#1f1d1b] pb-4">
+          <span className="px-3.5 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
             【 圓桌登記：選擇您的協商身分 】
           </span>
-          <span className="text-xs font-mono text-gray-400">進度：1 / 2 步</span>
+          <span className="text-xs font-mono font-bold text-gray-400">進度：1 / 2 步</span>
         </div>
 
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-[var(--color-text-dark)] font-serif flex items-center gap-2">
+        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-[#1f1d1b] font-serif flex items-center gap-2">
           <Sparkles className="text-[var(--color-brand-yellow)]" />
           選擇您的協商身分
         </h1>
@@ -49,9 +49,9 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
         </div>
 
         {/* Action area */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-[#e5dfd5] pt-6">
-          <div className="text-xs font-sans text-gray-400 flex items-center gap-1.5">
-            <HelpCircle size={14} className="text-[var(--color-brand-blue)]" />
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t-3 border-[#1f1d1b] pt-6">
+          <div className="text-xs font-sans font-semibold text-gray-400 flex items-center gap-1.5">
+            <HelpCircle size={14} className="text-[var(--color-brand-blue)] shrink-0" />
             {selectedRole 
               ? `已選定身分：${roles.find(r => r.id === selectedRole)?.name}` 
               : '請選擇一張角色卡牌以解鎖市民協商圓桌。'}
@@ -60,13 +60,13 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
           <button
             onClick={handleContinue}
             disabled={!selectedRole}
-            className={`w-full sm:w-auto px-8 py-3 rounded-full text-sm font-bold shadow-md transition-all duration-200 cursor-pointer ${
+            className={`w-full sm:w-auto px-8 py-3 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
               selectedRole 
-                ? 'bg-[var(--color-brand-green)] hover:bg-[#4b6a58] text-white hover:-translate-y-0.5 active:translate-y-0 shadow-md hover:shadow-lg' 
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                ? 'btn-flat-action bg-[var(--color-brand-green)] text-white hover:bg-[#a6bf4c]' 
+                : 'bg-gray-200 text-gray-400 border-2 border-gray-300 cursor-not-allowed shadow-none'
             }`}
           >
-            確認身分，開始簡報 →
+            確認身分，開始規劃踏查 →
           </button>
         </div>
       </div>
