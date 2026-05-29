@@ -1,30 +1,33 @@
-import { mockResponses } from '@/data/mockResponses';
+import { mockResponses, mockReactions } from '@/data/mockResponses';
 
 export interface AIResponses {
   [roleId: string]: string;
 }
 
 /**
- * Simulates fetching AI stakeholder responses asynchronously.
- * 
- * Future implementation:
- * Replace this mock fetching with a real Server API fetch:
- * 
- *   const response = await fetch('/api/negotiate', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json' },
- *     body: JSON.stringify({ roundId, playerRoleId, choiceId })
- *   });
- *   return await response.json();
+ * Simulates fetching AI stakeholder comments BEFORE a decision is made.
  */
 export async function fetchAIResponses(
   roundId: number,
-  playerRoleId: string,
-  choiceId?: string
+  playerRoleId: string
 ): Promise<AIResponses> {
-  // Simulate network latency (e.g., 900ms) to mock server processing
-  await new Promise(resolve => setTimeout(resolve, 900));
+  // Simulate network latency (e.g., 800ms)
+  await new Promise(resolve => setTimeout(resolve, 800));
   
-  // Return the mock responses for the given round
+  // Return the initial mock concerns for the given round
   return mockResponses[roundId] || {};
+}
+
+/**
+ * Simulates fetching AI stakeholder reactions AFTER a decision is made.
+ */
+export async function fetchAIReactions(
+  roundId: number,
+  choiceId: string
+): Promise<AIResponses> {
+  // Simulate network latency for AI deliberation (e.g., 1000ms)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Return the mock reactions for the given choice
+  return mockReactions[choiceId] || {};
 }

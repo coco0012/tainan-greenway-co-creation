@@ -1,5 +1,33 @@
 # 開發日誌 (Development Log) - 台南綠園道共創 (Tainan Greenway Co-Creation)
 
+## 里程碑 03：手繪水彩風格公民 RPG 與圓桌互動對話流 (Milestone 03: Watercolor RPG & Interactive Seating Chat)
+**日期**：2026-05-29
+
+### 1. 當前已完成功能 (Completed Features)
+- **手繪水彩風格插圖整合**：
+  - 導入了我們利用繪圖工具生成的 `/greenway_watercolor.png`，作為首頁主視覺和規劃地圖頂部的精緻景觀橫幅。
+  - 在結果頁頂部引入了 2.5D 等角水彩插畫風未來城市願景圖 `/future_city_25d.png`，展示協商完成後的綠帶想像。
+  - 在任務簡報頁面的三個衝突點，分別嵌入對應手繪圖 `/conflict_privacy.png`、`/conflict_commerce.png`、`/conflict_ecology.png`，視覺效果極佳。
+- **角色插畫形象與自我介紹對話氣泡**：
+  - 身分選擇、指標面板與滿意度矩陣，全面替換成 6 大市民代表的水彩手繪頭像圖片（`/avatar_*.png`）。
+  - 將關係人卡片的身分細節重構為指向其頭像的 HTML 對話框氣泡，模擬角色正在對玩家開口自我介紹的 RPG 臨場感。
+- **寫生繪本選單首頁**：
+  - 首頁改版為 RPG 遊戲開始選單樣式，附帶 `開始新局`、`載入存檔（鎖定）` 與可開啟手繪風對話引導彈窗的 `遊戲說明`。
+- **圓桌會議聊天流與真實互動**：
+  - 將協商圓桌背景重構為綠色水彩渲染的有機草坪 blob，並為席次加上動態高亮發言狀態。
+  - 改建討論區為時間線對話紀錄：進入回合時先展示各代表的初始主張；玩家選定選項後，以玩家角色（如阿明）名義動態將「提案對話泡」加入聊天流；隨後觸發模擬 AI 評議，以對話氣泡形式呈現其他 NPC 對此決策的動態反饋，大幅增強了故事性與帶入感。
+- **筆刷質感指標條**：
+  - 都市指標進度條套用波浪筆觸（Brush Stroke）效果，並搭配草寫風數值變化標籤。
+
+### 2. 已知問題與限制 (Known Issues & Limitations)
+- **AI 回應為本地動態生成**：目前 NPC 對決策的回應與態度在 `mockResponses.ts` 中依選項 ID 對照動態渲染，尚未真正串接即時 LLM。
+- **離線狀態**：所有玩家決策影響與歷史記錄仍存於 React 狀態中，無後端持久化儲存。
+
+### 3. 下一步規劃 (Next Steps)
+- **伺服器 API 路由**：實作 `/api/negotiate` 路由，將當前 roundId、playerRoleId、choiceId 發送至後端，並呼叫真實 Gemini/OpenAI API 流式返回生成的利益關係人發言。
+
+---
+
 ## 里程碑 02：溫暖遊戲化公民協商儀表板 (Milestone 02: Soft Civic Game Dashboard Redesign)
 **日期**：2026-05-29
 

@@ -1,16 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-green: #7ca897;
-  --color-brand-blue: #7093a8;
-  --color-brand-coral: #e3887c;
-  --color-bg-warm: #fdfbf7;
-  --color-border-gray: #f0ede9;
+  --color-brand-green: #5a7a68;
+  --color-brand-blue: #6b8b9b;
+  --color-brand-coral: #d37b70;
+  --color-brand-yellow: #e2a968;
+  --color-bg-warm: #faf5ed;
+  --color-border-warm: #e5dfd5;
+  --color-text-dark: #3a3530;
 }
 
 :root {
   --background: var(--color-bg-warm);
-  --foreground: #2d2a26;
+  --foreground: var(--color-text-dark);
 }
 
 body {
@@ -18,45 +20,104 @@ body {
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   background-image: 
-    radial-gradient(rgba(120, 110, 90, 0.05) 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
+    radial-gradient(rgba(140, 130, 110, 0.08) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
   background-position: top left;
   background-attachment: fixed;
   min-height: 100vh;
 }
 
-/* Soft Civic Game UI Helpers */
+/* Watercolor Style Helpers */
 .shadow-soft {
-  box-shadow: 0 10px 30px -5px rgba(120, 110, 90, 0.06), 0 4px 12px -2px rgba(120, 110, 90, 0.04);
+  box-shadow: 0 10px 25px -5px rgba(110, 100, 85, 0.06), 0 4px 10px -2px rgba(110, 100, 85, 0.04);
 }
 
 .shadow-soft-sm {
-  box-shadow: 0 4px 12px -2px rgba(120, 110, 90, 0.05);
+  box-shadow: 0 4px 12px -2px rgba(110, 100, 85, 0.05);
 }
 
-.bg-card-warm {
-  background-color: #FAF8F5;
+.shadow-watercolor {
+  box-shadow: 0 8px 30px rgba(90, 80, 70, 0.05), inset 0 0 40px rgba(250, 245, 237, 0.6);
 }
 
-.bg-card-active {
-  background-color: #FFFDFB;
+/* Organic Paper and Card Borders */
+.card-watercolor {
+  background-color: #fffdf9;
+  border: 2px solid #e8e2d7;
+  border-radius: 24px 20px 28px 22px / 20px 26px 22px 28px;
 }
 
-/* Chat bubble styling helpers */
-.chat-bubble-left {
+.card-watercolor-active {
+  background-color: #fffefa;
+  border: 2.5px solid var(--color-brand-coral);
+  box-shadow: 0 8px 20px rgba(211, 123, 112, 0.08);
+}
+
+/* Blob avatars */
+.blob-avatar-1 {
+  border-radius: 60% 40% 60% 40% / 50% 60% 40% 50%;
+}
+.blob-avatar-2 {
+  border-radius: 45% 55% 40% 60% / 60% 40% 55% 45%;
+}
+.blob-avatar-3 {
+  border-radius: 50% 50% 60% 40% / 40% 60% 40% 60%;
+}
+
+/* RPG Speech Bubble / Dialogue box styles */
+.rpg-speech-bubble {
   position: relative;
+  border-radius: 20px 16px 24px 18px / 18px 22px 18px 24px;
 }
-.chat-bubble-left::after {
+
+.rpg-speech-bubble::before {
   content: '';
   position: absolute;
-  left: -6px;
-  top: 14px;
-  width: 12px;
-  height: 12px;
-  background-color: inherit;
-  border-left: 1px solid rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.04);
-  transform: rotate(45deg);
+  width: 0;
+  height: 0;
+  border-style: solid;
 }
 
+.rpg-speech-bubble-left::before {
+  left: -10px;
+  top: 20px;
+  border-width: 8px 10px 8px 0;
+  border-color: transparent currentColor transparent transparent;
+}
 
+.rpg-speech-bubble-right::before {
+  right: -10px;
+  top: 20px;
+  border-width: 8px 0 8px 10px;
+  border-color: transparent transparent transparent currentColor;
+}
+
+/* Brush-stroke-like progress track */
+.brush-progress-track {
+  background-color: #ede7dc;
+  border-radius: 12px 10px 14px 8px / 8px 12px 10px 14px;
+  border: 1.5px solid #ded6c9;
+  overflow: hidden;
+}
+
+.brush-progress-fill {
+  border-radius: 10px 8px 12px 6px / 6px 10px 8px 12px;
+  transition: width 0.6s cubic-bezier(0.1, 0.8, 0.25, 1);
+}
+
+/* Custom Scrollbar for watercolor notebooks */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f5eedf;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8cebd;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c3b7a3;
+}

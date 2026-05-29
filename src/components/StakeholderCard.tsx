@@ -1,6 +1,5 @@
 import React from 'react';
 import { StakeholderRole } from '@/data/roles';
-import { Home, Store, Bike, Heart, Trees, Building2 } from 'lucide-react';
 
 interface StakeholderCardProps {
   role: StakeholderRole;
@@ -10,77 +9,104 @@ interface StakeholderCardProps {
 }
 
 export const StakeholderCard: React.FC<StakeholderCardProps> = ({ role, isSelected, onSelect, className = '' }) => {
-  const getRoleIconInfo = (id: string) => {
+  
+  const getRoleAvatar = (id: string) => {
     switch (id) {
-      case 'resident': 
-        return { icon: <Home className="w-5 h-5" />, bg: 'bg-rose-50 text-[var(--color-brand-coral)]' };
-      case 'shop_owner': 
-        return { icon: <Store className="w-5 h-5" />, bg: 'bg-orange-50 text-orange-400' };
-      case 'commuter': 
-        return { icon: <Bike className="w-5 h-5" />, bg: 'bg-blue-50 text-[var(--color-brand-blue)]' };
-      case 'elderly': 
-        return { icon: <Heart className="w-5 h-5" />, bg: 'bg-rose-50 text-rose-400' };
-      case 'environmentalist': 
-        return { icon: <Trees className="w-5 h-5" />, bg: 'bg-emerald-50 text-[var(--color-brand-green)]' };
-      case 'government': 
-        return { icon: <Building2 className="w-5 h-5" />, bg: 'bg-slate-50 text-slate-500' };
-      default: 
-        return { icon: <Home className="w-5 h-5" />, bg: 'bg-gray-50 text-gray-400' };
+      case 'resident': return '/avatar_resident.png';
+      case 'shop_owner': return '/avatar_shopowner.png';
+      case 'commuter': return '/avatar_commuter.png';
+      case 'elderly': return '/avatar_elderly.png';
+      case 'environmentalist': return '/avatar_environmentalist.png';
+      case 'government': return '/avatar_government.png';
+      default: return '/avatar_resident.png';
     }
   };
 
-  const { icon, bg } = getRoleIconInfo(role.id);
+  const getBlobClass = (id: string) => {
+    switch (id) {
+      case 'resident': case 'elderly': return 'blob-avatar-1';
+      case 'shop_owner': case 'environmentalist': return 'blob-avatar-2';
+      default: return 'blob-avatar-3';
+    }
+  };
+
+  const getAvatarBgColor = (id: string) => {
+    switch (id) {
+      case 'resident': return 'bg-rose-100';
+      case 'shop_owner': return 'bg-orange-100';
+      case 'commuter': return 'bg-blue-100';
+      case 'elderly': return 'bg-rose-100';
+      case 'environmentalist': return 'bg-emerald-100';
+      case 'government': return 'bg-slate-200';
+      default: return 'bg-gray-100';
+    }
+  };
+
   const valueTags = role.coreValues.split('、');
 
   return (
     <div 
-      className={`relative p-6 rounded-2xl border transition-all duration-200 flex flex-col justify-between h-full bg-white select-none ${
+      className={`relative p-5 transition-all duration-200 flex flex-col justify-between h-full select-none cursor-pointer ${
         isSelected 
-          ? 'border-[var(--color-brand-coral)] ring-2 ring-[var(--color-brand-coral)]/10 shadow-soft bg-card-active' 
-          : 'border-gray-200 hover:border-gray-300 hover:shadow-soft-sm hover:bg-gray-50/50'
-      } ${onSelect ? 'cursor-pointer' : ''} ${className}`}
+          ? 'card-watercolor card-watercolor-active bg-[#FFFFFC]' 
+          : 'card-watercolor hover:border-gray-400 hover:shadow-soft bg-[#FFFDF9]'
+      } ${className}`}
       onClick={() => onSelect && onSelect(role.id)}
     >
-      {/* Selection Banner */}
+      {/* Selected Indicator Banner */}
       {isSelected && (
         <div className="absolute top-4 right-4 bg-[var(--color-brand-coral)] text-white font-mono text-[9px] font-bold px-2 py-0.5 rounded-full select-none">
-          已選擇
+          已選擇 / SELECTED
         </div>
       )}
 
       <div>
         {/* Avatar and Info Block */}
-        <div className="flex items-center gap-3.5 mb-4">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${bg} shrink-0`}>
-            {icon}
+        <div className="flex items-center gap-4 mb-5">
+          <div className={`w-14 h-14 ${getBlobClass(role.id)} ${getAvatarBgColor(role.id)} flex items-center justify-center shrink-0 overflow-hidden border-2 border-[#eee6db] shadow-soft-sm`}>
+            <img 
+              src={getRoleAvatar(role.id)} 
+              alt={role.name}
+              className="w-full h-full object-cover scale-110" 
+            />
           </div>
           <div>
             <div className="font-mono text-[9px] text-gray-400 uppercase tracking-widest">[ {role.id.toUpperCase()} ]</div>
-            <h3 className="text-base font-bold text-gray-900 leading-tight">{role.name}</h3>
+            <h3 className="text-lg font-bold text-[var(--color-text-dark)] font-serif leading-tight">{role.name}</h3>
           </div>
         </div>
         
-        {/* Value Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {valueTags.map((tag, idx) => (
-            <span 
-              key={idx} 
-              className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px] font-semibold"
-            >
-              {tag.trim()}
-            </span>
-          ))}
-        </div>
+        {/* Dialogue Bubble displaying identity contents */}
+        <div className="relative bg-[#FAF7F2] border border-[#e5dfd5] p-4 rounded-2xl mb-4 text-[#5c554e] text-xs font-sans shadow-inner-sm
+                        before:content-[''] before:absolute before:top-[-8px] before:left-7 before:w-0 before:height-0 before:border-l-[8px] before:border-l-transparent before:border-r-[8px] before:border-r-transparent before:border-b-[8px] before:border-b-[#e5dfd5]
+                        after:content-[''] after:absolute after:top-[-6px] after:left-[29px] after:w-0 after:height-0 after:border-l-[6px] after:border-l-transparent after:border-r-[6px] after:border-r-transparent after:border-b-[6px] after:border-b-[#FAF7F2]">
+          
+          {/* Core Values */}
+          <div className="mb-2">
+            <span className="font-bold text-[10px] text-[var(--color-brand-green)] block mb-1">【 核心價值 】</span>
+            <div className="flex flex-wrap gap-1.5">
+              {valueTags.map((tag, idx) => (
+                <span 
+                  key={idx} 
+                  className="px-2 py-0.5 bg-[#FAF3E5] border border-[#e6dcce] text-gray-700 rounded-full text-[9px] font-semibold"
+                >
+                  {tag.trim()}
+                </span>
+              ))}
+            </div>
+          </div>
 
-        {/* Short Concerns summary */}
-        <div className="text-xs text-gray-500 font-sans mb-4">
-          <span className="font-bold text-[10px] text-gray-700 block mb-0.5">關鍵關注：</span>
-          <p className="leading-relaxed">{role.mainConcerns}</p>
+          {/* Key Concerns */}
+          <div>
+            <span className="font-bold text-[10px] text-[var(--color-brand-blue)] block mb-0.5">【 關注點 】</span>
+            <p className="text-[11px] leading-relaxed">{role.mainConcerns}</p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-2 p-3 bg-gray-50/70 border border-gray-100 rounded-xl text-xs text-gray-600 font-sans italic leading-relaxed">
-        {role.quote}
+      {/* Quote */}
+      <div className="mt-2 p-3 bg-[#fdfaf5] border border-[#f3ede3] rounded-xl text-[11px] text-gray-500 font-sans italic leading-relaxed text-center">
+        “ {role.quote} ”
       </div>
     </div>
   );
