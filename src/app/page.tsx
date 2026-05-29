@@ -3,15 +3,12 @@
 import React, { useState } from 'react';
 import { LandingScreen } from '@/components/LandingScreen';
 import { RoleSelection } from '@/components/RoleSelection';
-import { MissionScreen } from '@/components/MissionScreen';
-import { NegotiationDashboard } from '@/components/NegotiationDashboard';
-import { GreenwayMap } from '@/components/GreenwayMap';
-import { CivicIndicators } from '@/components/CivicIndicators';
+import { AdventureScreen } from '@/components/AdventureScreen';
 import { FinalResult } from '@/components/FinalResult';
 import { roles, StakeholderRole } from '@/data/roles';
 import { missionData, Choice, Effect } from '@/data/missionData';
 
-type Screen = 'landing' | 'role' | 'mission' | 'negotiation' | 'result';
+type Screen = 'landing' | 'role' | 'adventure' | 'result';
 
 const INITIAL_SCORES: Effect = {
   residential: 50,
@@ -25,22 +22,17 @@ export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('landing');
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [scores, setScores] = useState<Effect>(INITIAL_SCORES);
-  const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [spatialActions, setSpatialActions] = useState<string[]>([]);
 
   const handleStart = () => setCurrentScreen('role');
   
   const handleRoleSelect = (roleId: string) => {
     setSelectedRoleId(roleId);
-    setCurrentScreen('mission');
+    setCurrentScreen('adventure');
   };
 
-  const handleStartNegotiation = () => {
-    setCurrentScreen('negotiation');
-  };
-
-  const handleChoiceSelected = (choice: Choice) => {
-    // Update scores
+  const handleChoiceMade = (choice: Choice) => {
+    // Update scores in real-time
     setScores(prev => ({
       residential: Math.max(0, Math.min(100, prev.residential + choice.effects.residential)),
       commercial: Math.max(0, Math.min(100, prev.commercial + choice.effects.commercial)),
@@ -53,25 +45,20 @@ export default function Home() {
     if (choice.spatialAction) {
       setSpatialActions(prev => [...prev, choice.spatialAction]);
     }
+  };
 
-    // Go to next round or finish
-    if (currentRoundIndex < missionData.rounds.length - 1) {
-      setCurrentRoundIndex(prev => prev + 1);
-    } else {
-      setCurrentScreen('result');
-    }
+  const handleComplete = () => {
+    setCurrentScreen('result');
   };
 
   const handleRestart = () => {
     setCurrentScreen('landing');
     setSelectedRoleId(null);
     setScores(INITIAL_SCORES);
-    setCurrentRoundIndex(0);
     setSpatialActions([]);
   };
 
   const playerRole = roles.find(r => r.id === selectedRoleId) as StakeholderRole;
-  const currentRound = missionData.rounds[currentRoundIndex];
 
   return (
     <main className="h-screen w-full flex overflow-hidden bg-[var(--color-bg-warm)]">
@@ -83,53 +70,36 @@ export default function Home() {
         <RoleSelection onRoleSelect={handleRoleSelect} />
       )}
       
-      {currentScreen === 'mission' && (
-        <MissionScreen onStartNegotiation={handleStartNegotiation} />
-      )}
-      
-      {currentScreen === 'negotiation' && (
-        <div className="flex-1 flex flex-col h-full w-full p-6 max-w-[1600px] mx-auto overflow-hidden">
+      {currentScreen === 'adventure' && (
+        <div className="flex-1 flex flex-col h-full w-full p-4 md:p-6 max-w-[1600px] mx-auto overflow-hidden">
           {/* Top Panel Banner */}
-          <div className="mb-4 flex justify-between items-center border border-[#e8e5e0] bg-[#FAF8F5] p-4 rounded-2xl shadow-soft-sm select-none shrink-0">
+          <div className="mb-4 flex justify-between items-center border-2 border-[#e5dfd5] bg-white p-4 rounded-2xl shadow-soft-sm select-none shrink-0">
             <div className="flex items-center gap-3">
-              <span className="font-extrabold text-base tracking-tight text-gray-800">
+              <span className="font-serif font-extrabold text-base tracking-tight text-[var(--color-text-dark)]">
                 台南綠園道共創
               </span>
-              <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-100 text-[var(--color-brand-blue)] text-[9px] font-bold rounded-full font-mono">
-                參與式數位雙生原型
+              <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-100 text-[var(--color-brand-green)] text-[9px] font-bold rounded-full font-mono">
+                參與式都市空間踏查 RPG
               </span>
             </div>
             <div className="flex items-center gap-6 text-xs text-gray-500">
-              <span className="font-mono bg-white px-2 py-1 rounded-lg border border-gray-100">比例尺 1:2500</span>
+              <span className="font-mono bg-white px-2 py-1 rounded-lg border border-[#e5dfd5] text-[10px]">里程比例尺 1:2500</span>
               <span className="text-[var(--color-brand-coral)] font-bold flex items-center gap-1.5 animate-pulse">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-brand-coral)]" />
-                模擬協商進行中
+                <span className="w-2 h-2 rounded-full bg-[var(--color-brand-coral)] animate-ping" />
+                市民規劃踏查進行中
               </span>
             </div>
           </div>
           
-          <div className="flex-1 flex gap-4 h-full overflow-hidden">
-            {/* Left Panel: Map */}
-            <div className="w-1/4 h-full hidden lg:block">
-              <GreenwayMap spatialActions={spatialActions} />
-            </div>
-            
-            {/* Center Panel: Dashboard */}
-            <div className="flex-1 h-full">
-              <NegotiationDashboard 
-                round={currentRound}
-                playerRole={playerRole}
-                onChoiceSelected={handleChoiceSelected}
-              />
-            </div>
-            
-            {/* Right Panel: Indicators */}
-            <div className="w-1/4 h-full hidden lg:block">
-              <CivicIndicators 
-                scores={scores} 
-                playerRole={playerRole} 
-              />
-            </div>
+          <div className="flex-1 flex h-full overflow-hidden">
+            <AdventureScreen 
+              playerRole={playerRole}
+              rounds={missionData.rounds}
+              scores={scores}
+              spatialActions={spatialActions}
+              onChoiceMade={handleChoiceMade}
+              onComplete={handleComplete}
+            />
           </div>
         </div>
       )}
