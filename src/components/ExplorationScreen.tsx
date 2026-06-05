@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StakeholderRole } from '@/data/roles';
 import { Greenway25DMap } from './Greenway25DMap';
-import { Sparkles, HelpCircle, Check, ArrowRight, Lightbulb, Keyboard, Info } from 'lucide-react';
+import { Sparkles, Check, ArrowRight, Lightbulb, Keyboard, Info, MessageSquare, MapPin } from 'lucide-react';
 import { officialSpatialSegments, sourceNotes } from '@/data/officialGreenwayData';
 
 interface ExplorationScreenProps {
@@ -29,6 +29,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   const [selectedSegId, setSelectedSegId] = useState<number>(0);
   const [avatarPosition, setAvatarPosition] = useState<number>(15); // Start at Residential Segment (15%)
   const [activeDialogueNpc, setActiveDialogueNpc] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [collectedInsights, setCollectedInsights] = useState<Record<number, boolean>>({
     0: false,
     1: false,
@@ -72,7 +73,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
       npcId: 'shop_owner',
       npcName: '莉雅',
       npcTitle: '在地店家代表',
-      condition: '商家依賴地面人流與短暫停留。',
+      condition: '商家依賴地面人流與慢速停留。',
       conflict: '若騎士走高架路廊飛越街區，地方店鋪恐流失能見度與客源。',
       concern: '在地店家',
       observation: '本區段店家林立，若是高架化設計，騎士高速通過將跳過地面商圈，不利於地區商業復甦與活力。',
@@ -131,18 +132,14 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   // Keyboard controls listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't move if dialog is open
       if (activeDialogueNpc) return;
 
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         setAvatarPosition(p => {
           const next = Math.min(100, p + 2.5);
-          // Snap selection to closest segment if we walk near it
           const closeSeg = segments.find(s => Math.abs(next - s.pct) <= 4);
-          if (closeSeg) {
-            setSelectedSegId(closeSeg.id);
-          }
+          if (closeSeg) setSelectedSegId(closeSeg.id);
           return next;
         });
       } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
@@ -150,9 +147,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
         setAvatarPosition(p => {
           const next = Math.max(0, p - 2.5);
           const closeSeg = segments.find(s => Math.abs(next - s.pct) <= 4);
-          if (closeSeg) {
-            setSelectedSegId(closeSeg.id);
-          }
+          if (closeSeg) setSelectedSegId(closeSeg.id);
           return next;
         });
       } else if (e.key === ' ' || e.key === 'Spacebar') {
@@ -167,6 +162,14 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [avatarPosition, selectedSegId, activeDialogueNpc, collectedInsights]);
+
+  // Toast auto-clear
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
 
   const getRoleAvatar = (id: string) => {
     switch (id) {
@@ -206,6 +209,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
       ...prev,
       [selectedSegId]: true
     }));
+    setToastMsg(`Civic Insight Collected: 已成功解鎖【${currentSeg.name}】市民觀點卡！`);
     setActiveDialogueNpc(null);
   };
 
@@ -224,20 +228,27 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   const isAvatarCloseToCurrentNpc = Math.abs(avatarPosition - currentSeg.pct) <= 6;
 
   return (
-    <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden">
+    <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden relative">
+      
+      {/* Toast Notification HUD */}
+      {toastMsg && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-blob-green border-3 border-[#1f1d1b] px-4 py-2.5 rounded-xl text-xs font-black text-[#3e5f4c] shadow-flat-pop animate-bounce flex items-center gap-1.5 select-none">
+          <span className="text-sm">💡</span>
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       <div className="w-full h-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop-lg flex flex-col overflow-hidden relative">
         
         {/* Progress Header */}
         <div className="flex justify-between items-center mb-3 border-b-3 border-[#1f1d1b] pb-2.5 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-              【 PHASE 2 : 2.5D 綠園道實地踏查 】
-            </span>
-          </div>
+          <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
+            【 PHASE 2 : 2.5D 綠園道實地踏查 】
+          </span>
           <span className="text-xs font-mono font-bold text-gray-400">已收集公民觀點卡：{totalCollected} / 5 (集滿 3 個解鎖市民大會)</span>
         </div>
 
-        {/* Keyboard instructions & profile */}
+        {/* Keyboard instructions */}
         <div className="shrink-0 mb-3 bg-[#FAF8F5] border-2 border-[#1f1d1b] p-2.5 rounded-xl flex items-center justify-between shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-2 text-[#1f1d1b] text-[10.5px] font-bold">
             <Keyboard size={15} className="text-[var(--color-brand-blue)] shrink-0 animate-bounce" />
@@ -248,126 +259,100 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
           </span>
         </div>
 
-        {/* 2.5D Digital Twin Map View */}
-        <div className="h-44 w-full relative shrink-0 mb-3">
-          <Greenway25DMap 
-            activeSegmentId={selectedSegId}
-            avatarPosition={avatarPosition}
-            playerRole={playerRole}
-            collectedInsights={collectedInsights}
-            interactive={true}
-            onSegmentClick={handleSegmentClick}
-          />
-        </div>
-
-        {/* Selected Segment Details and Citizen Talk card */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4 relative overflow-hidden mb-3">
+        {/* Main Columns layout: Left is wide map, Right is floating drawer HUD */}
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-5 overflow-hidden mb-3">
           
-          {/* Left panel: Condition details */}
-          <div className="flex-1 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-4 shadow-flat-pop text-left flex flex-col justify-between overflow-y-auto">
-            <div>
-              <div className="flex justify-between items-center border-b-2 border-[#1f1d1b] pb-2 mb-2 shrink-0">
-                <h3 className="text-base font-extrabold text-[#1f1d1b] font-serif flex items-center gap-1.5">
-                  <span className="text-lg">📍</span> {currentSeg.name} 空間現狀
+          {/* Left Column: 2.5D Map Centerpiece (Wide) */}
+          <div className="flex-1 h-full relative flex flex-col">
+            <Greenway25DMap 
+              activeSegmentId={selectedSegId}
+              avatarPosition={avatarPosition}
+              playerRole={playerRole}
+              collectedInsights={collectedInsights}
+              interactive={true}
+              onSegmentClick={handleSegmentClick}
+            />
+          </div>
+
+          {/* Right Column: Sleek RPG Dialogue HUD (340px) */}
+          <div className="w-full md:w-80 shrink-0 h-full bg-white border-3 border-[#1f1d1b] rounded-2xl p-4 shadow-flat-pop flex flex-col justify-between overflow-y-auto">
+            
+            {/* Upper Details Block */}
+            <div className="space-y-3.5">
+              <div className="flex justify-between items-center border-b-2 border-[#1f1d1b] pb-2">
+                <h3 className="text-sm font-extrabold text-[#1f1d1b] font-serif flex items-center gap-1">
+                  <MapPin size={13} className="text-[var(--color-brand-coral)] shrink-0" />
+                  {currentSeg.name} 現場情資
                 </h3>
-                <span className="font-mono text-[9px] bg-blob-blue border border-[#1f1d1b] px-2 py-0.5 rounded shadow-[1px_1px_0px_0px_#1f1d1b]">
+                <span className="font-mono text-[8.5px] bg-blob-blue border border-[#1f1d1b] px-1.5 py-0.2 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                   {currentSeg.sta}
                 </span>
               </div>
 
-              <div className="space-y-2 text-[11px] font-sans">
+              <div className="space-y-2 text-[10.5px] text-left leading-normal font-sans">
                 <div>
-                  <span className="font-bold text-[9px] text-[#79afd3] block mb-0.5">🛣️ 空間環境現況 / CONDITIONS</span>
-                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">{currentSeg.condition}</p>
+                  <span className="font-bold text-[8.5px] text-[#79afd3] block mb-0.5">🛣️ 空間環境現況 / CONDITIONS</span>
+                  <p className="text-[#1f1d1b] font-semibold">{currentSeg.condition}</p>
                 </div>
                 <div>
-                  <span className="font-bold text-[9px] text-rose-500 block mb-0.5">⚡ 關鍵規劃衝突點 / SPATIAL CONFLICT</span>
-                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">{currentSeg.conflict}</p>
+                  <span className="font-bold text-[8.5px] text-rose-500 block mb-0.5">⚡ 關鍵規劃衝突點 / SPATIAL CONFLICT</span>
+                  <p className="text-[#1f1d1b] font-semibold">{currentSeg.conflict}</p>
                 </div>
                 <div>
-                  <span className="font-bold text-[9px] text-[var(--color-brand-green)] block mb-0.5">🏛️ 官方規劃考量 / OFFICIAL RELEVANCE</span>
-                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">
+                  <span className="font-bold text-[8.5px] text-[var(--color-brand-green)] block mb-0.5">🏛️ 官方規劃考量 / OFFICIAL RELEVANCE</span>
+                  <p className="text-[#1f1d1b] font-semibold">
                     {officialSpatialSegments.find(s => s.id === selectedSegId)?.officialRelevance}
                   </p>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
                   <span className="font-bold text-[8px] text-gray-500 block mb-0.5">✏️ 踏查現場規劃觀察 / OBSERVATION NOTE</span>
-                  <p className="italic text-gray-600 text-[10.5px] leading-relaxed">{currentSeg.observation}</p>
+                  <p className="italic text-gray-600 text-[10px] leading-relaxed">{currentSeg.observation}</p>
                 </div>
               </div>
             </div>
 
-            {/* Collected Insight status check with Source Note */}
-            <div className="mt-3 pt-2.5 border-t border-dashed border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shrink-0">
-              <div className="text-left font-sans select-none text-[8.5px] text-gray-400">
-                <div className="font-bold leading-none">{sourceNotes.visibleNote}</div>
-                <div className="mt-1">
-                  來源：<a href={sourceNotes.sourcesList[0].url} target="_blank" rel="noreferrer" className="underline hover:text-[var(--color-brand-blue)] font-bold">{sourceNotes.sourcesList[0].name}</a>
-                </div>
-              </div>
-              
-              {collectedInsights[currentSeg.id] ? (
-                <span className="px-2.5 py-1 bg-blob-green border-2 border-[#1f1d1b] text-[10px] font-bold text-[#3e5f4c] rounded shadow-[1px_1px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
-                  <Check size={11} /> 觀點卡已解鎖 💡
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[10px] font-bold text-[#c26257] rounded shadow-[1px_1px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
-                  {isAvatarCloseToCurrentNpc ? '💡 點擊右側或按空白鍵交談' : '🚶 請移動角色靠近市民'}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Right panel: Citizen Card & Dialog Trigger */}
-          <div className="w-full md:w-80 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-4 shadow-flat-pop text-center flex flex-col justify-between shrink-0">
-            <div className="flex flex-col items-center">
-              <span className="text-[8.5px] font-mono font-bold text-gray-400 uppercase mb-2">[ LOCAL ENCOUNTER ]</span>
-              
-              {/* NPC avatar rendering */}
-              <div className="flex items-center justify-center gap-2.5 mb-2 relative">
+            {/* Lower NPC block & Button */}
+            <div className="border-t border-dashed border-gray-200 pt-3 mt-3">
+              <div className="flex items-center gap-3 mb-3">
                 {currentSeg.npcId === 'environmentalist_elderly' ? (
-                  /* Render overlapping avatars for Segment 4 */
-                  <div className="flex -space-x-4">
-                    <div className="w-16 h-16 rounded-full border-2 border-[#1f1d1b] bg-blob-green flex items-center justify-center overflow-hidden shadow-flat-pop relative z-10">
-                      <img src="/avatar_environmentalist.png" alt="綠野老師" className="w-full h-full object-cover scale-110" />
+                  <div className="flex -space-x-3 shrink-0">
+                    <div className="w-10 h-10 rounded-full border-2 border-[#1f1d1b] bg-blob-green flex items-center justify-center overflow-hidden shadow-flat-pop">
+                      <img src="/avatar_environmentalist.png" alt="環保代表" className="w-full h-full object-cover scale-110" />
                     </div>
-                    <div className="w-16 h-16 rounded-full border-2 border-[#1f1d1b] bg-blob-pink flex items-center justify-center overflow-hidden shadow-flat-pop relative z-0">
-                      <img src="/avatar_elderly.png" alt="陳伯伯" className="w-full h-full object-cover scale-110" />
+                    <div className="w-10 h-10 rounded-full border-2 border-[#1f1d1b] bg-blob-pink flex items-center justify-center overflow-hidden shadow-flat-pop">
+                      <img src="/avatar_elderly.png" alt="高齡代表" className="w-full h-full object-cover scale-110" />
                     </div>
                   </div>
                 ) : (
-                  <div className={`w-18 h-18 rounded-full border-3 border-[#1f1d1b] ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shadow-flat-pop`}>
+                  <div className={`w-10 h-10 rounded-full border-2 border-[#1f1d1b] shrink-0 ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shadow-flat-pop`}>
                     <img src={getRoleAvatar(currentSeg.npcId)} alt={currentSeg.npcName} className="w-full h-full object-cover scale-110" />
                   </div>
                 )}
+                <div className="text-left">
+                  <h4 className="text-xs font-serif font-black text-[#1f1d1b] leading-tight">{currentSeg.npcName}</h4>
+                  <span className="text-[8px] text-gray-400 font-mono block mt-0.5 truncate">{currentSeg.npcTitle}</span>
+                </div>
               </div>
-              
-              <h4 className="text-sm font-extrabold text-[#1f1d1b] font-serif mb-0.5">{currentSeg.npcName}</h4>
-              <span className="px-2 py-0.5 bg-gray-150 border border-gray-300 text-[8.5px] text-gray-600 rounded-md font-sans font-bold">
-                {currentSeg.npcTitle}
-              </span>
-            </div>
 
-            {/* Trigger buttons */}
-            <div className="mt-3">
               {collectedInsights[currentSeg.id] ? (
-                <div className="w-full py-2 bg-gray-100 border-2 border-gray-300 text-gray-500 rounded-xl text-[10px] font-bold text-center flex items-center justify-center gap-1 select-none">
-                  <Check size={12} /> 順利取得此段落共創觀點
+                <div className="w-full py-2 bg-gray-100 border-2 border-gray-300 text-gray-400 rounded-xl text-[9px] font-bold text-center flex items-center justify-center gap-1 select-none">
+                  <Check size={11} /> 已成功收集該區觀點卡
                 </div>
               ) : (
                 <button
                   disabled={!isAvatarCloseToCurrentNpc}
                   onClick={() => handleTalk(currentSeg.id, currentSeg.npcId)}
-                  className={`w-full btn-flat-action py-2.5 rounded-xl text-[10px] flex items-center justify-center gap-1.5 font-bold shadow-flat-pop ${
+                  className={`w-full btn-flat-action py-2.5 rounded-xl text-[9.5px] flex items-center justify-center gap-1.5 font-bold shadow-flat-pop ${
                     isAvatarCloseToCurrentNpc 
                       ? 'bg-[var(--color-brand-yellow)] text-[#1f1d1b]' 
-                      : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed shadow-none hover:transform-none'
+                      : 'bg-gray-150 text-gray-400 border-gray-300 cursor-not-allowed shadow-none hover:transform-none'
                   }`}
                 >
-                  💬 與代表開啟交談
+                  💬 與現場代表開啟對話
                 </button>
               )}
             </div>
+
           </div>
 
         </div>
@@ -376,7 +361,11 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
         <div className="shrink-0 border-t-3 border-[#1f1d1b] pt-3.5">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[10px] font-bold text-[#1f1d1b] font-serif block">[ 🎒 您的公民觀點卡手牌 / YOUR INSIGHT CARD DECK ]</span>
-            <span className="text-[8.5px] font-mono text-gray-400">這些觀點卡將在 Phase 5 協商會議中作為您的發言籌碼</span>
+            <div className="text-left font-sans select-none text-[8.5px] text-gray-400 flex items-center gap-1.5">
+              <span>{sourceNotes.visibleNote}</span>
+              <span>•</span>
+              <span>來源：<a href={sourceNotes.sourcesList[0].url} target="_blank" rel="noreferrer" className="underline hover:text-[var(--color-brand-blue)] font-bold">{sourceNotes.sourcesList[0].name}</a></span>
+            </div>
           </div>
           
           <div className="grid grid-cols-5 gap-3.5">

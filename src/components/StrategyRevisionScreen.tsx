@@ -297,7 +297,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
         </div>
 
         {/* 2.5D Digital Twin Map View at the top of the Revision screen */}
-        <div className="h-40 w-full shrink-0 mb-4">
+        <div className="h-52 md:h-64 w-full shrink-0 mb-4">
           <Greenway25DMap 
             playerRole={playerRole}
             selections={selections}
