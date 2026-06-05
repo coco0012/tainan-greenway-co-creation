@@ -310,6 +310,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
             playerRole={playerRole}
             selections={selections}
             interactive={false}
+            mapState="revision"
           />
         </div>
 

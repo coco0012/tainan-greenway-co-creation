@@ -455,6 +455,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
               collectedInsights={collectedInsights}
               interactive={true}
               onSegmentClick={handleSegmentClick}
+              mapState="exploration"
             />
           </div>
 

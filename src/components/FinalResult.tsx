@@ -171,6 +171,7 @@ export const FinalResult: React.FC<FinalResultProps> = ({
             playerRole={playerRole}
             selections={selections}
             interactive={false}
+            mapState="final"
           />
           <div className="absolute bottom-3 right-3 bg-white border-2 border-[#1f1d1b] px-3 py-1 rounded text-[10px] font-bold text-[#1f1d1b] shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] z-20">
             🌿 審定方案之未來綠園道 2.5D 數位雙生模擬圖
