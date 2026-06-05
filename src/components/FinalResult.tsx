@@ -3,6 +3,7 @@ import { Effect } from '@/data/missionData';
 import { StakeholderRole, roles } from '@/data/roles';
 import { strategyResults } from '@/data/strategyResults';
 import { calculateStrategy } from '@/lib/gameLogic';
+import { Greenway25DMap } from './Greenway25DMap';
 import { CheckCircle, RefreshCw } from 'lucide-react';
 
 interface FinalResultProps {
@@ -24,6 +25,36 @@ export const FinalResult: React.FC<FinalResultProps> = ({
   // Calculate average score for government
   const allScores = Object.values(scores);
   const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+
+  const getSelectionsFromActions = (): Record<number, string> => {
+    const res: Record<number, string> = { 0: 'a', 1: 'a', 2: 'a', 3: 'a', 4: 'a' };
+    spatialActions.forEach(action => {
+      if (action.startsWith('住宅段：')) {
+        if (action.includes('地面慢速')) res[0] = 'a';
+        else if (action.includes('局部高架')) res[0] = 'b';
+        else if (action.includes('社區安寧')) res[0] = 'c';
+      } else if (action.startsWith('商業段：')) {
+        if (action.includes('地面慢速')) res[1] = 'a';
+        else if (action.includes('自行車停靠')) res[1] = 'b';
+        else if (action.includes('店家物流')) res[1] = 'c';
+      } else if (action.startsWith('車站節點：')) {
+        if (action.includes('YouBike')) res[2] = 'a';
+        else if (action.includes('行人優先')) res[2] = 'b';
+        else if (action.includes('清晰指引')) res[2] = 'c';
+      } else if (action.startsWith('主要路口：')) {
+        if (action.includes('局部自行車')) res[3] = 'a';
+        else if (action.includes('地面保護')) res[3] = 'b';
+        else if (action.includes('人車分流')) res[3] = 'c';
+      } else if (action.startsWith('生態綠帶段：')) {
+        if (action.includes('連續複層')) res[4] = 'a';
+        else if (action.includes('高透水')) res[4] = 'b';
+        else if (action.includes('生態緩衝')) res[4] = 'c';
+      }
+    });
+    return res;
+  };
+
+  const selections = getSelectionsFromActions();
 
   const getBadgeStyles = (key: string) => {
     switch (key) {
@@ -131,15 +162,15 @@ export const FinalResult: React.FC<FinalResultProps> = ({
           </div>
         </div>
         
-        {/* 2.5D Future City Vision Image */}
-        <div className="w-full h-56 md:h-72 rounded-xl overflow-hidden border-3 border-[#1f1d1b] mb-8 shadow-flat-pop relative bg-blob-green">
-          <img 
-            src="/future_city_25d.png" 
-            alt="未來台南綠園道2.5D想像圖" 
-            className="w-full h-full object-cover"
+        {/* Dynamic 2.5D Digital Twin Map View */}
+        <div className="w-full h-56 md:h-72 mb-8 relative shrink-0">
+          <Greenway25DMap 
+            playerRole={playerRole}
+            selections={selections}
+            interactive={false}
           />
-          <div className="absolute bottom-3 right-3 bg-white border-2 border-[#1f1d1b] px-3 py-1 rounded text-[10px] font-bold text-[#1f1d1b] shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)]">
-            🌿 未來綠園道 2.5D 規劃模擬想像圖
+          <div className="absolute bottom-3 right-3 bg-white border-2 border-[#1f1d1b] px-3 py-1 rounded text-[10px] font-bold text-[#1f1d1b] shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] z-20">
+            🌿 審定方案之未來綠園道 2.5D 數位雙生模擬圖
           </div>
         </div>
 
@@ -258,7 +289,7 @@ export const FinalResult: React.FC<FinalResultProps> = ({
         </div>
 
         {/* Stakeholders satisfaction matrix */}
-        <div className="border-t-3 border-[#1f1d1b] pt-6 mb-10">
+        <div className="border-t-3 border-[#1f1d1b] pt-6 mb-8">
           <h3 className="text-xs font-bold font-mono uppercase text-gray-400 mb-4">[ 市民協商代表滿意度指標 / CO-SIGNATURE MATRIX ]</h3>
           
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -292,6 +323,24 @@ export const FinalResult: React.FC<FinalResultProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Civic Negotiation Memo & Source Data Note */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t-3 border-[#1f1d1b] pt-6 mb-8 text-xs leading-relaxed text-left">
+          <div className="bg-gray-50 border-2 border-[#1f1d1b] p-4 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="font-bold text-[10px] text-gray-500 block mb-1">📜 市民圓桌協商備忘錄 / CIVIC NEGOTIATION MEMO</span>
+            <p className="text-gray-650 text-[10.5px]">
+              本案經由代表「{playerRole?.name}」的主角玩家於市民協商會議中，與周邊居民、在地店家、騎士代表、環保人士及市府科長進行圓桌辯論。各方針對高架自行車道的私密性、商圈人流與都市減碳降溫指標達成初步共識，並移交草案工作台由代表進行空間對策調整，最終獲得多數代表簽署核備。
+            </p>
+          </div>
+          <div className="bg-gray-50 border-2 border-[#1f1d1b] p-4 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
+            <div>
+              <span className="font-bold text-[10px] text-gray-500 block mb-1">📊 工程資料來源與技術宣告 / SOURCE DATA & TECHNICAL NOTES</span>
+              <p className="text-gray-650 text-[10px]">
+                規劃範圍對齊台南市縱貫鐵路地下化釋出之線性地表帶（STA 0+000 - STA 1+400）。指標演算模型基於參與式都市設計（Participatory Design）與都市微氣候保水效益指標，提供視覺化的數位雙生概念驗證原型，暫無實體API連線。
+              </p>
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StakeholderRole, roles } from '@/data/roles';
-import { Sparkles, HelpCircle, MapPin, MessageSquare, Check, ArrowRight, Lightbulb, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { StakeholderRole } from '@/data/roles';
+import { Greenway25DMap } from './Greenway25DMap';
+import { Sparkles, HelpCircle, Check, ArrowRight, Lightbulb, Keyboard, Info } from 'lucide-react';
 
 interface ExplorationScreenProps {
   playerRole: StakeholderRole;
@@ -11,7 +12,7 @@ interface Segment {
   id: number;
   name: string;
   sta: string;
-  left: number;
+  pct: number;
   npcId: string;
   npcName: string;
   npcTitle: string;
@@ -20,10 +21,12 @@ interface Segment {
   concern: string;
   observation: string;
   dialogue: string;
+  insightSummary: string;
 }
 
 export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole, onExploreComplete }) => {
   const [selectedSegId, setSelectedSegId] = useState<number>(0);
+  const [avatarPosition, setAvatarPosition] = useState<number>(15); // Start at Residential Segment (15%)
   const [activeDialogueNpc, setActiveDialogueNpc] = useState<string | null>(null);
   const [collectedInsights, setCollectedInsights] = useState<Record<number, boolean>>({
     0: false,
@@ -32,15 +35,24 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
     3: false,
     4: false
   });
-  
-  const mapRef = useRef<HTMLDivElement>(null);
+
+  const getSegmentPct = (id: number) => {
+    switch (id) {
+      case 0: return 15;
+      case 1: return 38;
+      case 2: return 56;
+      case 3: return 74;
+      case 4: return 90;
+      default: return 15;
+    }
+  };
 
   const segments: Segment[] = [
     {
       id: 0,
       name: '住宅段',
       sta: 'STA 0+000 - 0+400',
-      left: 20,
+      pct: 15,
       npcId: 'resident',
       npcName: '阿明',
       npcTitle: '周邊居民代表',
@@ -48,13 +60,14 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
       conflict: '高架自行車道可能會造成視覺侵入與隱私壓力。',
       concern: '周邊居民',
       observation: '高架自行車道設計如果過於貼近住宅二樓，將對沿線住戶的生活隱私與日照採光造成實質干擾。',
-      dialogue: '「住宅段需要處理視線遮蔽、夜間噪音與生活安寧。高架自行車道如果離二樓陽台太近，每天生活都像被公開展示，生活會很不自在。希望降至地面層或增設遮蔽隔板！」'
+      dialogue: '「住宅段非常需要寧靜與隱私。如果高架自行車道離我們的二樓陽台太近，每天生活都像被路人公開展示。我們希望降至地面層慢行，或者有高架隱私遮簾，保留我們社區的安寧！」',
+      insightSummary: '住宅段需要處理視線遮蔽、夜間噪音與生活安寧。'
     },
     {
       id: 1,
       name: '商業段',
       sta: 'STA 0+400 - 0+700',
-      left: 40,
+      pct: 38,
       npcId: 'shop_owner',
       npcName: '莉雅',
       npcTitle: '在地店家代表',
@@ -62,64 +75,97 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
       conflict: '若騎士走高架路廊飛越街區，地方店鋪恐流失能見度與客源。',
       concern: '在地店家',
       observation: '本區段店家林立，若是高架化設計，騎士高速通過將跳過地面商圈，不利於地區商業復甦與活力。',
-      dialogue: '「商業段需要把通行效率轉化為可停留的人流。如果騎士都從高架上通過，我們地面層的麵店、飲料店就吃不到人流。希望引導自行車降至地面，打造慢速人車共享街區！」'
+      dialogue: '「商業段最需要的是人流停留！如果騎士都從高架自行車道飛越過去，我們地面層的傳統店家與日常生活就完全失去商機。我們支持降至地面，打造慢速人車共享街區與廣場！」',
+      insightSummary: '商業段需要把通行效率轉化為可停留的人流。'
     },
     {
       id: 2,
       name: '車站節點',
       sta: 'STA 0+700',
-      left: 56,
-      npcId: 'government',
-      npcName: '林科長',
-      npcTitle: '市府 / 設計師代表',
+      pct: 56,
+      npcId: 'commuter',
+      npcName: '小宇',
+      npcTitle: '通勤 / 騎士代表',
       condition: '車站區域連結步行、自行車、大眾運輸與 YouBike 系統。',
       conflict: '快速通過與轉乘便利性可能與行人步行舒適度產生衝突。',
       concern: '通勤 / 騎士',
       observation: '鐵路地下化後的舊車站節點是交通匯集處，如何在保障行人安全步行的同時，維護高效率的轉乘與騎行？',
-      dialogue: '「車站節點需要整合轉乘效率與步行安全。我們希望能合理劃分快慢行駛區域，整合 YouBike 與公車大眾運輸，並開闢行人優先廣場，達到人車分流與安全步行。」'
+      dialogue: '「車站節點是交通的核心，我們最關心的是通勤騎乘的連續性與轉乘效率。如果綠園道不順暢，每天上班通勤都會延誤。我們希望這裡有清晰的YouBike與大眾運輸轉乘樞紐，人車分流，不要中斷我們的騎行線路！」',
+      insightSummary: '車站節點需要整合轉乘效率與步行安全。'
     },
     {
       id: 3,
       name: '主要路口',
       sta: 'STA 0+700 - 0+900',
-      left: 72,
-      npcId: 'commuter',
-      npcName: '小宇',
-      npcTitle: '通勤 / 騎士代表',
+      pct: 74,
+      npcId: 'government',
+      npcName: '林科長',
+      npcTitle: '市府 / 設計師代表',
       condition: '主要幹道切斷了綠園道的空間連續性。',
       conflict: '平面穿越可能較為危險，但連續的立體高架基礎設施會產生空間壓迫感。',
       concern: '市府 / 設計師',
       observation: '綠廊面臨十字路口繁忙車流，平面交織的衝突點極多，需有專用號誌控制或立體化分流對策。',
-      dialogue: '「主要路口適合討論局部高架或受保護穿越。上下班時間青年路口車流量超級大，直接平面通過有極大安全威脅。希望設計自行車專用陸橋或是受保護的平面路口設計！」'
+      dialogue: '「主要路口車流量大，我們的核心考量是交通安全與工程可行性。平面穿越需要有受保護的自行車十字路口，或者規劃人車分流號誌。若要維持高架，就要考慮立體自行車陸橋，但預算和空間遮擋也需要審慎評估。」',
+      insightSummary: '主要路口適合討論局部高架或受保護穿越。'
     },
     {
       id: 4,
       name: '生態綠帶段',
       sta: 'STA 0+900 - 1+400',
-      left: 88,
-      npcId: 'environmentalist',
-      npcName: '綠野老師',
-      npcTitle: '環保團體代表',
+      pct: 90,
+      npcId: 'environmentalist_elderly',
+      npcName: '綠野老師 與 陳伯伯',
+      npcTitle: '環保代表 與 高齡漫步代表',
       condition: '綠園道可成為台南市區的降溫綠化廊道。',
       conflict: '過多的水泥硬鋪面會加劇熱島效應並降低基地透水率。',
-      concern: '環保團體 / 高齡漫步者',
+      concern: '環保團體 與 高齡漫步者',
       observation: '本段南部綠蔭環繞。如果全鋪設不透水的水泥硬質鋪面，都市風道將受阻，熱島效應會讓地表高溫難耐。',
-      dialogue: '「生態段需要樹蔭、雨水花園、透水鋪面與舒適步行環境。台南夏季極度炎熱，鋪面不應過度硬質化，多栽植複層林蔭與雨水花園，才能為城市降溫減碳。」'
+      dialogue: '「生態綠帶段是台南市中心的降溫廊道！我們反對過多的硬鋪面和水泥建設。這裡必須廣植林蔭大樹，高透水雨水花園，以及平緩的無障礙散步道，讓老人家有地方坐著歇腳，也讓綠廊發揮降溫保水效益。」',
+      insightSummary: '生態段需要樹蔭、雨水花園、透水鋪面與舒適步行環境。'
     }
   ];
 
-  // Sync scroll positioning to center selected segment
+  const currentSeg = segments[selectedSegId];
+
+  // Keyboard controls listener
   useEffect(() => {
-    if (mapRef.current) {
-      const activeSeg = segments.find(s => s.id === selectedSegId);
-      if (activeSeg) {
-        const containerWidth = mapRef.current.clientWidth;
-        const scrollWidth = mapRef.current.scrollWidth;
-        const targetPixel = (activeSeg.left / 100) * scrollWidth;
-        mapRef.current.scrollLeft = targetPixel - containerWidth / 2;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't move if dialog is open
+      if (activeDialogueNpc) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setAvatarPosition(p => {
+          const next = Math.min(100, p + 2.5);
+          // Snap selection to closest segment if we walk near it
+          const closeSeg = segments.find(s => Math.abs(next - s.pct) <= 4);
+          if (closeSeg) {
+            setSelectedSegId(closeSeg.id);
+          }
+          return next;
+        });
+      } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        setAvatarPosition(p => {
+          const next = Math.max(0, p - 2.5);
+          const closeSeg = segments.find(s => Math.abs(next - s.pct) <= 4);
+          if (closeSeg) {
+            setSelectedSegId(closeSeg.id);
+          }
+          return next;
+        });
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        const dist = Math.abs(avatarPosition - currentSeg.pct);
+        if (dist <= 6 && !collectedInsights[selectedSegId]) {
+          handleTalk(selectedSegId, currentSeg.npcId);
+        }
       }
-    }
-  }, [selectedSegId]);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [avatarPosition, selectedSegId, activeDialogueNpc, collectedInsights]);
 
   const getRoleAvatar = (id: string) => {
     switch (id) {
@@ -145,6 +191,11 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
     }
   };
 
+  const handleSegmentClick = (id: number) => {
+    setSelectedSegId(id);
+    setAvatarPosition(getSegmentPct(id));
+  };
+
   const handleTalk = (segId: number, npcId: string) => {
     setActiveDialogueNpc(npcId);
   };
@@ -160,167 +211,147 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   const totalCollected = Object.values(collectedInsights).filter(Boolean).length;
   const isExplorationDone = totalCollected >= 3;
 
-  const currentSeg = segments[selectedSegId];
-
   const handleFinishExploration = () => {
     if (isExplorationDone) {
       const insightNames = segments
         .filter(s => collectedInsights[s.id])
-        .map(s => `${s.name}的觀點：${s.npcName}`);
+        .map(s => `${s.name}的觀點：${s.insightSummary}`);
       onExploreComplete(insightNames);
     }
   };
+
+  const isAvatarCloseToCurrentNpc = Math.abs(avatarPosition - currentSeg.pct) <= 6;
 
   return (
     <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden">
       <div className="w-full h-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop-lg flex flex-col overflow-hidden relative">
         
         {/* Progress Header */}
-        <div className="flex justify-between items-center mb-4 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
-          <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 2 : 實地踏查與公民觀點收集 】
-          </span>
-          <span className="text-xs font-mono font-bold text-gray-400">已收集公民觀點：{totalCollected} / 5 (收集至少 3 個解鎖簡報)</span>
+        <div className="flex justify-between items-center mb-3 border-b-3 border-[#1f1d1b] pb-2.5 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
+              【 PHASE 2 : 2.5D 綠園道實地踏查 】
+            </span>
+          </div>
+          <span className="text-xs font-mono font-bold text-gray-400">已收集公民觀點卡：{totalCollected} / 5 (集滿 3 個解鎖市民大會)</span>
         </div>
 
-        {/* Info panel */}
-        <div className="shrink-0 mb-4 bg-gray-50 border-2 border-[#1f1d1b] p-3 rounded-xl flex items-center justify-between shadow-[2px_2px_0px_0px_#1f1d1b]">
-          <div className="flex items-center gap-2 text-[#1f1d1b] font-serif text-xs md:text-sm font-bold">
-            <Lightbulb className="text-[var(--color-brand-yellow)] w-5 h-5 shrink-0" />
-            <span>請點選下方綠園道地圖上的各路段，閱讀觀察筆記並與該區市民交談，收集規劃觀點！</span>
+        {/* Keyboard instructions & profile */}
+        <div className="shrink-0 mb-3 bg-[#FAF8F5] border-2 border-[#1f1d1b] p-2.5 rounded-xl flex items-center justify-between shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 text-[#1f1d1b] text-[10.5px] font-bold">
+            <Keyboard size={15} className="text-[var(--color-brand-blue)] shrink-0 animate-bounce" />
+            <span>使用鍵盤左右方向鍵 <strong>← →</strong> 或 <strong>A D</strong> 移動角色，接近市民後按 <strong>空白鍵 (Space)</strong> 開啟交談！</span>
           </div>
-          <span className="hidden sm:inline-block px-2.5 py-1 bg-white border border-gray-300 text-[10px] rounded-lg font-mono">
-            當前身分：{playerRole.name}
+          <span className="text-[9.5px] bg-white px-2 py-0.5 rounded border-2 border-[#1f1d1b] font-bold">
+            代表身分：{playerRole.name}
           </span>
         </div>
 
-        {/* Scrollable Greenway Map Explorer */}
-        <div 
-          ref={mapRef}
-          className="h-44 w-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl overflow-x-auto overflow-y-hidden whitespace-nowrap scroll-smooth relative shadow-flat-pop shrink-0 mb-4"
-        >
-          <div className="inline-block min-w-[1200px] w-full h-full relative select-none">
-            <img 
-              src="/greenway_watercolor.png" 
-              alt="綠園道水彩畫卷" 
-              className="absolute inset-0 w-full h-full object-cover opacity-75 pointer-events-none"
-            />
-            
-            {/* Horizontal progress path overlay */}
-            <div className="absolute inset-x-0 bottom-4 h-1.5 bg-[#1f1d1b] opacity-20 pointer-events-none" />
-
-            {/* Segment pins */}
-            {segments.map((seg) => {
-              const isSelected = selectedSegId === seg.id;
-              const hasInsight = collectedInsights[seg.id];
-              return (
-                <button 
-                  key={seg.id}
-                  onClick={() => setSelectedSegId(seg.id)}
-                  style={{ left: `${seg.left}%` }}
-                  className={`absolute bottom-8 -translate-x-1/2 flex flex-col items-center z-10 focus:outline-none transition-transform ${
-                    isSelected ? 'scale-110' : 'hover:scale-105'
-                  }`}
-                >
-                  {/* Pin tag */}
-                  <div className={`px-2.5 py-1 border-2 border-[#1f1d1b] font-serif text-[9px] font-bold shadow-[2px_2px_0px_0px_#1f1d1b] rounded-lg flex items-center gap-1 transition-colors ${
-                    isSelected 
-                      ? 'bg-[#f3ce6b]' 
-                      : hasInsight 
-                        ? 'bg-blob-green' 
-                        : 'bg-white'
-                  }`}>
-                    <MapPin size={10} className={isSelected ? 'animate-bounce text-[#1f1d1b]' : 'text-gray-400'} />
-                    <span>{seg.name}</span>
-                    {hasInsight && <Check size={10} className="text-emerald-700 font-bold" />}
-                  </div>
-                  
-                  {/* Stakeholder small avatar on map */}
-                  <div className={`mt-2 w-8 h-8 rounded-full border-2 border-[#1f1d1b] ${getBlobBgClass(seg.npcId)} flex items-center justify-center overflow-hidden shadow-[1px_1px_0px_0px_#1f1d1b] bg-white`}>
-                    <img src={getRoleAvatar(seg.npcId)} alt={seg.npcName} className="w-full h-full object-cover scale-110" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        {/* 2.5D Digital Twin Map View */}
+        <div className="h-44 w-full relative shrink-0 mb-3">
+          <Greenway25DMap 
+            activeSegmentId={selectedSegId}
+            avatarPosition={avatarPosition}
+            playerRole={playerRole}
+            collectedInsights={collectedInsights}
+            interactive={true}
+            onSegmentClick={handleSegmentClick}
+          />
         </div>
 
         {/* Selected Segment Details and Citizen Talk card */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-5 relative overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-4 relative overflow-hidden mb-3">
           
           {/* Left panel: Condition details */}
-          <div className="flex-1 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop text-left flex flex-col justify-between overflow-y-auto">
+          <div className="flex-1 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-4 shadow-flat-pop text-left flex flex-col justify-between overflow-y-auto">
             <div>
-              <div className="flex justify-between items-center border-b-2 border-[#1f1d1b] pb-2 mb-3 shrink-0">
-                <h3 className="text-lg font-extrabold text-[#1f1d1b] font-serif">{currentSeg.name}</h3>
+              <div className="flex justify-between items-center border-b-2 border-[#1f1d1b] pb-2 mb-2 shrink-0">
+                <h3 className="text-base font-extrabold text-[#1f1d1b] font-serif flex items-center gap-1.5">
+                  <span className="text-lg">📍</span> {currentSeg.name} 空間現狀
+                </h3>
                 <span className="font-mono text-[9px] bg-blob-blue border border-[#1f1d1b] px-2 py-0.5 rounded shadow-[1px_1px_0px_0px_#1f1d1b]">
                   {currentSeg.sta}
                 </span>
               </div>
 
-              <div className="space-y-3 font-sans text-xs">
+              <div className="space-y-2 text-[11px] font-sans">
                 <div>
-                  <span className="font-bold text-[10px] text-[#79afd3] block mb-0.5">🛣️ 空間現況分析 / SPATIAL CONDITION</span>
-                  <p className="text-[#1f1d1b] font-medium leading-relaxed">{currentSeg.condition}</p>
+                  <span className="font-bold text-[9px] text-[#79afd3] block mb-0.5">🛣️ 空間環境現況 / CONDITIONS</span>
+                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">{currentSeg.condition}</p>
                 </div>
                 <div>
-                  <span className="font-bold text-[10px] text-rose-500 block mb-0.5">⚡ 關鍵空間衝突 / KEY CONFLICT</span>
-                  <p className="text-[#1f1d1b] font-medium leading-relaxed">{currentSeg.conflict}</p>
+                  <span className="font-bold text-[9px] text-rose-500 block mb-0.5">⚡ 關鍵規劃衝突點 / SPATIAL CONFLICT</span>
+                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">{currentSeg.conflict}</p>
                 </div>
-                <div>
-                  <span className="font-bold text-[10px] text-amber-600 block mb-0.5">👥 相關代表立場關切 / STAKEHOLDER CONCERN</span>
-                  <p className="text-[#1f1d1b] font-medium leading-relaxed">{currentSeg.concern}</p>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg">
-                  <span className="font-bold text-[9px] text-gray-500 block mb-0.5">✏️ 踏查現場觀察筆記 / OBSERVATION NOTE</span>
-                  <p className="italic text-gray-600 text-[11px] leading-relaxed">{currentSeg.observation}</p>
+                <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
+                  <span className="font-bold text-[8px] text-gray-500 block mb-0.5">✏️ 踏查現場規劃觀察 / OBSERVATION NOTE</span>
+                  <p className="italic text-gray-600 text-[10.5px] leading-relaxed">{currentSeg.observation}</p>
                 </div>
               </div>
             </div>
 
             {/* Collected Insight status check */}
-            <div className="mt-4 pt-3 border-t border-dashed border-gray-200 flex justify-between items-center shrink-0">
-              <span className="text-[10px] font-bold text-gray-400 font-mono">[ Insight Collection Status ]</span>
+            <div className="mt-3 pt-2.5 border-t border-dashed border-gray-200 flex justify-between items-center shrink-0">
+              <span className="text-[9px] font-bold text-gray-400 font-mono">[ INSIGHT CARD STATUS ]</span>
               {collectedInsights[currentSeg.id] ? (
-                <span className="px-2.5 py-1 bg-blob-green border-2 border-[#1f1d1b] text-xs font-bold text-[#3e5f4c] rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
-                  <Check size={12} /> 已收集此路段觀點 💡
+                <span className="px-2.5 py-1 bg-blob-green border-2 border-[#1f1d1b] text-[10px] font-bold text-[#3e5f4c] rounded shadow-[1px_1px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
+                  <Check size={11} /> 觀點卡已解鎖 💡
                 </span>
               ) : (
-                <span className="px-2.5 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-xs font-bold text-[#c26257] rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif animate-pulse">
-                  ⚠️ 待收集市民觀點
+                <span className="px-2.5 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[10px] font-bold text-[#c26257] rounded shadow-[1px_1px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
+                  {isAvatarCloseToCurrentNpc ? '💡 點擊右側或按空白鍵交談' : '🚶 請移動角色靠近市民'}
                 </span>
               )}
             </div>
           </div>
 
           {/* Right panel: Citizen Card & Dialog Trigger */}
-          <div className="w-full md:w-80 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop text-center flex flex-col justify-between shrink-0">
+          <div className="w-full md:w-80 bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-4 shadow-flat-pop text-center flex flex-col justify-between shrink-0">
             <div className="flex flex-col items-center">
-              <div className="font-mono text-[9px] text-gray-400 uppercase tracking-widest mb-3">[ REPRESENTATIVE ON SITE ]</div>
+              <span className="text-[8.5px] font-mono font-bold text-gray-400 uppercase mb-2">[ LOCAL ENCOUNTER ]</span>
               
-              {/* NPC avatar with Memphis blob background */}
-              <div className={`w-24 h-24 rounded-full border-3 border-[#1f1d1b] ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shadow-flat-pop mb-4`}>
-                <img src={getRoleAvatar(currentSeg.npcId)} alt={currentSeg.npcName} className="w-full h-full object-cover scale-110" />
+              {/* NPC avatar rendering */}
+              <div className="flex items-center justify-center gap-2.5 mb-2 relative">
+                {currentSeg.npcId === 'environmentalist_elderly' ? (
+                  /* Render overlapping avatars for Segment 4 */
+                  <div className="flex -space-x-4">
+                    <div className="w-16 h-16 rounded-full border-2 border-[#1f1d1b] bg-blob-green flex items-center justify-center overflow-hidden shadow-flat-pop relative z-10">
+                      <img src="/avatar_environmentalist.png" alt="綠野老師" className="w-full h-full object-cover scale-110" />
+                    </div>
+                    <div className="w-16 h-16 rounded-full border-2 border-[#1f1d1b] bg-blob-pink flex items-center justify-center overflow-hidden shadow-flat-pop relative z-0">
+                      <img src="/avatar_elderly.png" alt="陳伯伯" className="w-full h-full object-cover scale-110" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`w-18 h-18 rounded-full border-3 border-[#1f1d1b] ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shadow-flat-pop`}>
+                    <img src={getRoleAvatar(currentSeg.npcId)} alt={currentSeg.npcName} className="w-full h-full object-cover scale-110" />
+                  </div>
+                )}
               </div>
               
-              <h4 className="text-base font-extrabold text-[#1f1d1b] font-serif mb-0.5">{currentSeg.npcName}</h4>
-              <span className="px-2 py-0.5 bg-gray-150 border border-gray-300 text-[10px] text-gray-600 rounded-md font-sans font-bold">
+              <h4 className="text-sm font-extrabold text-[#1f1d1b] font-serif mb-0.5">{currentSeg.npcName}</h4>
+              <span className="px-2 py-0.5 bg-gray-150 border border-gray-300 text-[8.5px] text-gray-600 rounded-md font-sans font-bold">
                 {currentSeg.npcTitle}
               </span>
             </div>
 
             {/* Trigger buttons */}
-            <div className="mt-6">
+            <div className="mt-3">
               {collectedInsights[currentSeg.id] ? (
-                <div className="w-full py-3 bg-gray-100 border-2 border-gray-300 text-gray-500 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1">
-                  <Check size={14} /> 已完成對話與意見收集
+                <div className="w-full py-2 bg-gray-100 border-2 border-gray-300 text-gray-500 rounded-xl text-[10px] font-bold text-center flex items-center justify-center gap-1 select-none">
+                  <Check size={12} /> 順利取得此段落共創觀點
                 </div>
               ) : (
                 <button
+                  disabled={!isAvatarCloseToCurrentNpc}
                   onClick={() => handleTalk(currentSeg.id, currentSeg.npcId)}
-                  className="w-full btn-flat-action py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-[var(--color-brand-yellow)] text-[#1f1d1b] font-bold shadow-flat-pop"
+                  className={`w-full btn-flat-action py-2.5 rounded-xl text-[10px] flex items-center justify-center gap-1.5 font-bold shadow-flat-pop ${
+                    isAvatarCloseToCurrentNpc 
+                      ? 'bg-[var(--color-brand-yellow)] text-[#1f1d1b]' 
+                      : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed shadow-none hover:transform-none'
+                  }`}
                 >
-                  <MessageSquare size={14} /> 與 {currentSeg.npcName} 開啟現場交談
+                  💬 與代表開啟交談
                 </button>
               )}
             </div>
@@ -328,11 +359,59 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
 
         </div>
 
+        {/* Collected Insights Deck - RPG Cards visual */}
+        <div className="shrink-0 border-t-3 border-[#1f1d1b] pt-3.5">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] font-bold text-[#1f1d1b] font-serif block">[ 🎒 您的公民觀點卡手牌 / YOUR INSIGHT CARD DECK ]</span>
+            <span className="text-[8.5px] font-mono text-gray-400">這些觀點卡將在 Phase 5 協商會議中作為您的發言籌碼</span>
+          </div>
+          
+          <div className="grid grid-cols-5 gap-3.5">
+            {segments.map((seg) => {
+              const isCollected = collectedInsights[seg.id];
+              return (
+                <div 
+                  key={seg.id}
+                  className={`relative p-2.5 rounded-xl border-3 border-[#1f1d1b] flex flex-col justify-between min-h-[92px] text-left transition-all ${
+                    isCollected 
+                      ? 'bg-white shadow-[3px_3px_0px_0px_#1f1d1b] scale-100' 
+                      : 'bg-gray-100/50 border-dashed border-gray-400 text-gray-400 scale-95 opacity-60'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[8px] font-extrabold uppercase font-serif tracking-tight">
+                      {seg.name}卡
+                    </span>
+                    <span className="text-xs">
+                      {seg.id === 0 ? '🏡' : seg.id === 1 ? '🛍️' : seg.id === 2 ? '🚲' : seg.id === 3 ? '🚂' : '🌿'}
+                    </span>
+                  </div>
+
+                  <div className="text-[8.5px] font-bold leading-normal font-sans tracking-tight mb-1 flex-1">
+                    {isCollected ? (
+                      <p className="text-gray-700 line-clamp-3">"{seg.insightSummary}"</p>
+                    ) : (
+                      <div className="h-full flex items-center justify-center italic text-gray-400">
+                        [ 尚未探索解鎖 ]
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-1 mt-1 text-[7px] font-bold">
+                    <span>{isCollected ? `代表：${seg.npcName.split(' ')[0]}` : '關卡鎖定'}</span>
+                    {isCollected && <span className="text-emerald-600 font-extrabold text-[8px]">💡 已收集</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Exploration finish transition bar at bottom */}
         {isExplorationDone && (
-          <div className="mt-4 pt-4 border-t-3 border-[#1f1d1b] flex justify-between items-center shrink-0">
+          <div className="mt-4 pt-3.5 border-t-3 border-[#1f1d1b] flex justify-between items-center shrink-0 animate-fade-in">
             <div className="text-xs font-sans text-emerald-700 font-bold flex items-center gap-1">
-              <Check size={14} className="animate-bounce" /> 已成功收集完 5 個路段的全體市民代表觀點！即將開啟協商會議。
+              <Check size={14} className="animate-bounce" /> 已成功收集超過 3 張公民觀點卡！您可以隨時召開市民協商大會。
             </div>
             <button 
               onClick={handleFinishExploration}
@@ -345,16 +424,27 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
 
         {/* Dialogue Bubble Overlay Modal */}
         {activeDialogueNpc && (
-          <div className="absolute inset-0 bg-[#1f1d1b]/40 backdrop-blur-xs flex items-center justify-center p-4 z-40 animate-fade-in rounded-xl">
+          <div className="absolute inset-0 bg-[#1f1d1b]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in rounded-xl">
             <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 max-w-lg w-full shadow-flat-pop-lg relative animate-scale-in text-left select-none flex flex-col gap-4">
               
               <div className="flex items-center gap-3 border-b-2 border-dashed border-gray-300 pb-2 mb-1 shrink-0">
-                <div className={`w-12 h-12 rounded-full border-2 border-[#1f1d1b] ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shrink-0`}>
-                  <img src={getRoleAvatar(currentSeg.npcId)} alt={currentSeg.npcName} className="w-full h-full object-cover scale-110" />
-                </div>
+                {currentSeg.npcId === 'environmentalist_elderly' ? (
+                  <div className="flex -space-x-3">
+                    <div className="w-10 h-10 rounded-full border-2 border-[#1f1d1b] bg-blob-green flex items-center justify-center overflow-hidden shrink-0">
+                      <img src="/avatar_environmentalist.png" alt="環保代表" className="w-full h-full object-cover scale-110" />
+                    </div>
+                    <div className="w-10 h-10 rounded-full border-2 border-[#1f1d1b] bg-blob-pink flex items-center justify-center overflow-hidden shrink-0">
+                      <img src="/avatar_elderly.png" alt="高齡代表" className="w-full h-full object-cover scale-110" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`w-10 h-10 rounded-full border-2 border-[#1f1d1b] ${getBlobBgClass(currentSeg.npcId)} flex items-center justify-center overflow-hidden shrink-0`}>
+                    <img src={getRoleAvatar(currentSeg.npcId)} alt={currentSeg.npcName} className="w-full h-full object-cover scale-110" />
+                  </div>
+                )}
                 <div>
-                  <h4 className="text-sm font-extrabold text-[#1f1d1b] font-serif">{currentSeg.npcName} ({currentSeg.npcTitle})</h4>
-                  <span className="text-[9px] text-gray-400 font-mono uppercase tracking-wider">綠園道現場・踏查訪談</span>
+                  <h4 className="text-sm font-extrabold text-[#1f1d1b] font-serif">{currentSeg.npcName}</h4>
+                  <span className="text-[8px] text-gray-400 font-mono uppercase tracking-wider">{currentSeg.npcTitle}</span>
                 </div>
               </div>
 
@@ -367,15 +457,15 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
               </div>
 
               <div className="bg-blob-yellow/30 border border-amber-300 px-3 py-2 rounded-lg text-[10px] text-amber-800 leading-normal flex items-start gap-1">
-                <Lightbulb size={12} className="shrink-0 mt-0.5 text-amber-600" />
-                <span>理解市民的擔憂，已在您的規劃筆記中解鎖：**【{currentSeg.name}】的公民觀點**。</span>
+                <Lightbulb size={12} className="shrink-0 mt-0.5 text-amber-600 animate-pulse" />
+                <span>恭喜！理解市民代表的訴求後，您已解鎖並收集了：<strong>【{currentSeg.name}觀點卡】💡</strong>！</span>
               </div>
 
               <button
                 onClick={handleCloseDialogue}
                 className="w-full btn-flat-action py-2.5 rounded-xl text-xs bg-[var(--color-brand-green)] text-white shadow-flat-pop font-bold mt-2"
               >
-                好的，記錄此觀點並結束交談
+                收進卡包，結束現場交談 ➔
               </button>
 
             </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Effect } from '@/data/missionData';
 import { StakeholderRole, roles } from '@/data/roles';
 import { Sparkles, Check, RefreshCw, BarChart2, CheckCircle } from 'lucide-react';
+import { Greenway25DMap } from './Greenway25DMap';
 
 interface StrategyRevisionScreenProps {
   playerRole: StakeholderRole;
@@ -283,7 +284,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
         {/* Progress Header */}
         <div className="flex justify-between items-center mb-4 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
           <span className="px-3 py-1 bg-blob-green border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 6 : 空間策略修訂工作台 】
+            【 PHASE 5 : 空間策略修訂工作台 】
           </span>
           <div className="flex gap-2">
             <button 
@@ -293,6 +294,15 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
               <RefreshCw size={10} /> 重置協商決策
             </button>
           </div>
+        </div>
+
+        {/* 2.5D Digital Twin Map View at the top of the Revision screen */}
+        <div className="h-40 w-full shrink-0 mb-4">
+          <Greenway25DMap 
+            playerRole={playerRole}
+            selections={selections}
+            interactive={false}
+          />
         </div>
 
         {/* Dashboard layout */}

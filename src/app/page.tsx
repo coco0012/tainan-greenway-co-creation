@@ -27,6 +27,7 @@ export default function Home() {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [scores, setScores] = useState<Effect>(INITIAL_SCORES);
   const [spatialActions, setSpatialActions] = useState<string[]>([]);
+  const [collectedInsights, setCollectedInsights] = useState<string[]>([]);
   
   // Track player choices from Negotiation rounds to preload Strategy Revision Screen
   const [negotiationChoices, setNegotiationChoices] = useState<Record<number, string>>({});
@@ -41,6 +42,7 @@ export default function Home() {
   };
 
   const handleExploreComplete = (insights: string[]) => {
+    setCollectedInsights(insights);
     setCurrentScreen('brief');
   };
 
@@ -79,6 +81,7 @@ export default function Home() {
     setScores(INITIAL_SCORES);
     setSpatialActions([]);
     setNegotiationChoices({});
+    setCollectedInsights([]);
   };
 
   const playerRole = roles.find(r => r.id === selectedRoleId) as StakeholderRole;
@@ -162,6 +165,7 @@ export default function Home() {
               rounds={missionData.rounds}
               onChoiceMade={handleChoiceMade}
               onNegotiationComplete={handleNegotiationComplete}
+              collectedInsights={collectedInsights}
             />
           </div>
         </div>

@@ -35,18 +35,18 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStart }) => {
             </div>
 
             {/* Memphis Styled Large Title */}
-            <div className="text-center md:text-left mb-6">
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 title-memphis leading-tight">
+            <div className="text-center md:text-left mb-5 text-[#1f1d1b]">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2.5 title-memphis leading-tight">
                 Tainan <br className="hidden md:block" /> Greenway <br className="hidden md:block" /> Co-Creation
               </h1>
-              <p className="text-xs md:text-sm font-bold text-[#1f1d1b] font-sans mt-2">
-                基於生成式 AI 的參與式數位雙生綠園道共創平台
+              <p className="text-xs md:text-sm font-black text-rose-500 font-sans tracking-wide uppercase mt-1 animate-pulse">
+                「當鐵路進入地下，地面上的綠園道該屬於誰？」
               </p>
             </div>
 
             {/* Description Paragraph */}
-            <p className="text-xs text-[#5c554e] leading-relaxed mb-8 text-center md:text-left bg-gray-50 border border-gray-200 p-4 rounded-xl">
-              您將化身為所選定的市民代表，沿著 1.4 公里的綠帶畫卷進行「實地踏查移動」，與沿途的居民、商家、長者以及設計師 NPC 展開深度對話，並提交空間策略提案。
+            <p className="text-xs text-[#5c554e] leading-relaxed mb-6 text-center md:text-left bg-gray-50 border-2 border-[#1f1d1b] p-4 rounded-xl shadow-[2.5px_2.5px_0px_0px_#1f1d1b] font-semibold">
+              您將以「公民代表」身分親臨未來台南綠園道現場，利用鍵盤或滑鼠在 2.5D 線性地圖上「實地踏查」，會晤不同代表收集「觀點卡手牌」，隨後進入圓桌大會協商與修訂您的空間對策，共創屬於這座城市的數位雙生規劃藍圖！
             </p>
           </div>
 

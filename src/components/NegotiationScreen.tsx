@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { Choice, Round } from '@/data/missionData';
 import { StakeholderRole, roles } from '@/data/roles';
-import { Sparkles, Check, ChevronRight, MessageSquare, ShieldAlert, Award } from 'lucide-react';
+import { Sparkles, ChevronRight, CheckCircle, Info } from 'lucide-react';
 
 interface NegotiationScreenProps {
   playerRole: StakeholderRole;
   rounds: Round[];
   onChoiceMade: (choice: Choice) => void;
   onNegotiationComplete: () => void;
+  collectedInsights: string[];
 }
 
 export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   playerRole,
   rounds,
   onChoiceMade,
-  onNegotiationComplete
+  onNegotiationComplete,
+  collectedInsights
 }) => {
   const [roundIdx, setRoundIdx] = useState(0);
-  const [step, setStep] = useState(0); // 0: Question, 1: Choice Selection, 2: Player proposal text, 3: Resident/Shopowner feedback, 4: Elderly/Commuter feedback, 5: Environmentalist feedback, 6: Gov feedback
+  const [step, setStep] = useState(0); // 0: Intro, 1: Choice Selection, 2: Player proposal, 3: Resident feedback, 4: Commuter/Elderly feedback, 5: Environmentalist feedback, 6: Gov feedback
   const [selectedChoice, setSelectedChoice] = useState<Choice | null>(null);
 
   const currentRound = rounds[roundIdx];
@@ -31,20 +33,17 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
       case 'elderly': return '/avatar_elderly.png';
       case 'environmentalist': return '/avatar_environmentalist.png';
       case 'government': return '/avatar_government.png';
-      case 'player': return getRoleAvatar(playerRole.id);
       default: return '/avatar_resident.png';
     }
   };
 
   const getRoleName = (id: string) => {
-    if (id === 'player') return `${playerRole.name} (您)`;
     const r = roles.find(item => item.id === id);
     return r ? r.name : '市民代表';
   };
 
   const getBlobBgClass = (id: string) => {
-    const speakerId = id === 'player' ? playerRole.id : id;
-    switch (speakerId) {
+    switch (id) {
       case 'resident': return 'bg-blob-pink';
       case 'shop_owner': return 'bg-blob-yellow';
       case 'commuter': return 'bg-blob-blue';
@@ -55,15 +54,35 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
     }
   };
 
-  // Dynamic content matrix for comments based on roundIdx and choiceId
+  // Determine who is actively speaking in the round based on current step
+  const getActiveSpeakerId = (): string => {
+    if (step === 0) {
+      // Intro speaker
+      if (roundIdx === 0) return 'resident';
+      if (roundIdx === 1) return 'shop_owner';
+      return 'environmentalist';
+    }
+    if (step === 2) return playerRole.id; // Player proposes
+    if (step === 3) return roundIdx === 0 ? 'resident' : roundIdx === 1 ? 'shop_owner' : 'environmentalist';
+    if (step === 4) return roundIdx === 0 ? 'commuter' : roundIdx === 1 ? 'elderly' : 'elderly';
+    if (step === 5) return 'environmentalist';
+    if (step === 6) return 'government';
+    return '';
+  };
+
+  const activeSpeakerId = getActiveSpeakerId();
+
+  // Dialog dialogues mapping
   const getDialogue = (): { speakerId: string; text: string; buttonText: string } => {
+    const isPlayer = activeSpeakerId === playerRole.id;
+    const speakerLabel = isPlayer ? 'player' : activeSpeakerId;
+
     if (roundIdx === 0) {
-      // Round 1: Residential Area
       switch (step) {
         case 0:
           return {
             speakerId: 'resident',
-            text: '我們住宅社區段緊鄰許多老舊透天厝。自行車高架橋如果蓋得太高、太靠近我們的二樓陽台，居民每天的隱私和安寧都會受到嚴重干擾，生活變得很不自在。',
+            text: '我們住宅段緊鄰許多老舊透天厝。自行車高架橋如果蓋得太高、太靠近我們的二樓陽台，居民每天的隱私和安寧都會受到嚴重干擾，生活變得很不自在。',
             buttonText: '我瞭解了，讓我們評估空間配置提案。'
           };
         case 2:
@@ -116,12 +135,11 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
           return { speakerId: 'player', text: '', buttonText: '' };
       }
     } else if (roundIdx === 1) {
-      // Round 2: Commercial Area
       switch (step) {
         case 0:
           return {
             speakerId: 'shop_owner',
-            text: '我們商業區沿線店家林立。如果只讓自行車快速度從二樓高架橋飛越過去，地面的店鋪完全看不到人潮，對店家的生存打擊太大了。',
+            text: '我們商業段沿線店家林立。如果只讓自行車快速度從二樓高架橋飛越過去，地面的店鋪完全看不到人潮，對店家的生存打擊太大了。',
             buttonText: '我瞭解了，讓我們評估商業街區提案。'
           };
         case 2:
@@ -174,7 +192,6 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
           return { speakerId: 'player', text: '', buttonText: '' };
       }
     } else {
-      // Round 3: Ecological area
       switch (step) {
         case 0:
           return {
@@ -215,7 +232,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
               ? '路面平坦好騎，但缺乏大樹遮蔭，騎在上面像在煎鍋上，非常痛苦。' 
               : choiceId === '3b' 
                 ? '綠化很多確實舒服，但要注意落葉和雨天過後的路面濕滑與排水維護問題。' 
-                : '既有活動廣場又有舒適綠意，對吸引人潮與休閒很有幫助。',
+                : '既有活動廣場又保有舒適綠意，對吸引人潮與休閒很有幫助。',
             buttonText: '聆聽市府林科長的評估'
           };
         case 6:
@@ -242,7 +259,6 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
     } else if (step >= 2 && step < 6) {
       setStep(prev => prev + 1); // Step through NPC feedback
     } else if (step === 6) {
-      // End of round
       if (roundIdx < 2) {
         setRoundIdx(prev => prev + 1);
         setStep(0);
@@ -256,7 +272,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   const handleChoiceSelect = (choice: Choice) => {
     setSelectedChoice(choice);
     onChoiceMade(choice);
-    setStep(2); // Go to player proposal text
+    setStep(2);
   };
 
   const getMetricLabel = (key: string) => {
@@ -281,119 +297,197 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
     }
   };
 
+  const parsedInsights = collectedInsights.map(insight => {
+    const parts = insight.split('的觀點：');
+    return {
+      title: parts[0] || '公民觀點',
+      text: parts[1] || insight
+    };
+  });
+
   return (
     <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden justify-center items-center">
-      <div className="max-w-4xl w-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 md:p-8 shadow-flat-pop-lg relative flex flex-col justify-between min-h-[540px] md:min-h-[580px] overflow-hidden text-left">
+      <div className="w-full h-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop-lg flex flex-col justify-between overflow-hidden text-left relative">
         
-        {/* Progress Header */}
-        <div className="flex justify-between items-center mb-4 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-3 border-b-3 border-[#1f1d1b] pb-2.5 shrink-0">
           <span className="px-3 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 5 : 市民代表圓桌協商會議 】
+            【 PHASE 4 : 市民代表圓桌協商會議 】
           </span>
-          <span className="text-xs font-mono font-bold text-gray-400">協商議題：{roundIdx + 1} / 3</span>
+          <span className="text-xs font-mono font-bold text-gray-400">協商議題進度：{roundIdx + 1} / 3</span>
         </div>
 
-        {/* Subtitle */}
-        <div className="shrink-0 mb-4 bg-gray-50 border-2 border-[#1f1d1b] p-3.5 rounded-xl">
-          <h2 className="text-sm font-extrabold text-[#1f1d1b] font-serif mb-1 flex items-center gap-1.5">
-            <Sparkles className="text-[var(--color-brand-yellow)] w-4.5 h-4.5" />
+        {/* Subtitle / Topic card */}
+        <div className="shrink-0 mb-3 bg-gray-50 border-2 border-[#1f1d1b] p-3 rounded-xl shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)]">
+          <h2 className="text-xs md:text-sm font-extrabold text-[#1f1d1b] font-serif mb-1 flex items-center gap-1.5">
+            <Sparkles className="text-[var(--color-brand-yellow)] w-4 h-4" />
             第 {roundIdx + 1} 輪議題：{currentRound.title}
           </h2>
-          <p className="text-xs text-gray-600 font-sans leading-normal">
-            議題核心問答：**{currentRound.question}**
+          <p className="text-[11px] text-gray-600 font-sans leading-normal font-semibold">
+            📌 討論焦點：{currentRound.question}
           </p>
         </div>
 
-        {/* Active Conversation HUD */}
-        <div className="flex-1 bg-white border-3 border-[#1f1d1b] p-5 rounded-2xl shadow-flat-pop flex flex-col justify-between min-h-0 relative">
+        {/* Main Workspace split: Left/Center is roundtable & dialog, Right is collected insight cards deck */}
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 overflow-hidden mb-2">
           
-          {step !== 1 ? (
-            /* Dialogue Bubbles */
-            <div className="flex-1 flex flex-col justify-between min-h-0">
-              <div className="flex-1 overflow-y-auto pr-1">
-                <div className="flex gap-4 items-start md:items-center">
-                  
-                  {/* Speaker Avatar */}
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className={`w-14 h-14 rounded-full border-3 border-[#1f1d1b] overflow-hidden flex items-center justify-center ${getBlobBgClass(currentDialogue.speakerId)} shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
-                      <img 
-                        src={getRoleAvatar(currentDialogue.speakerId)} 
-                        alt={getRoleName(currentDialogue.speakerId)} 
-                        className="w-full h-full object-cover scale-110"
-                      />
+          {/* Left Column: Roundtable Visualization + Dialogue box */}
+          <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
+            
+            {/* Roundtable board */}
+            <div className="bg-[#FAF8F5] border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop relative min-h-[160px] flex items-center justify-center shrink-0 mb-4 bg-[radial-gradient(rgba(31,29,27,0.04)_1px,transparent_1px)] bg-[size:15px_15px]">
+              
+              {/* Wooden center table */}
+              <div className="w-60 h-28 rounded-full border-4 border-[#1f1d1b] bg-[#e8e5db] shadow-[inset_3px_3px_0px_rgba(0,0,0,0.08)] flex items-center justify-center relative select-none">
+                <span className="text-[#1f1d1b] font-serif font-black text-[9px] uppercase tracking-widest opacity-25">
+                  臺南市民協商圓桌
+                </span>
+                
+                {/* Visual marker inside table */}
+                <div className="w-12 h-12 rounded-full border-2 border-dashed border-[#1f1d1b]/20 flex items-center justify-center" />
+              </div>
+
+              {/* 6 Stakeholder positions around the table */}
+              {[
+                { id: 'resident', name: '周邊居民 阿明', style: { left: '10%', top: '15%' } },
+                { id: 'shop_owner', name: '在地店家 莉雅', style: { left: '10%', top: '60%' } },
+                { id: 'commuter', name: '通勤/騎士 小宇', style: { right: '10%', top: '60%' } },
+                { id: 'elderly', name: '高齡代表 陳伯伯', style: { right: '10%', top: '15%' } },
+                { id: 'environmentalist', name: '環保代表 綠野', style: { left: '50%', top: '3%', transform: 'translateX(-50%)' } },
+                { id: 'government', name: '市府代表 林科長', style: { left: '50%', top: '75%', transform: 'translateX(-50%)' } }
+              ].map(member => {
+                const isActive = activeSpeakerId === member.id;
+                const isPlayer = playerRole.id === member.id;
+                
+                return (
+                  <div 
+                    key={member.id}
+                    style={member.style}
+                    className="absolute flex flex-col items-center transition-all duration-200 z-10"
+                  >
+                    {/* Character avatar frame */}
+                    <div className={`w-11 h-11 rounded-full border-2 border-[#1f1d1b] overflow-hidden flex items-center justify-center ${getBlobBgClass(member.id)} shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] ${
+                      isActive 
+                        ? 'scale-115 ring-3 ring-[var(--color-brand-coral)] border-[var(--color-brand-coral)] animate-pulse' 
+                        : 'opacity-75'
+                    }`}>
+                      <img src={getRoleAvatar(member.id)} alt={member.id} className="w-full h-full object-cover scale-110" />
                     </div>
-                    <span className="mt-2 text-[9px] font-bold text-[#1f1d1b] bg-white border-2 border-[#1f1d1b] px-2 py-0.5 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
-                      {getRoleName(currentDialogue.speakerId)}
+                    {/* Label */}
+                    <span className={`mt-1 text-[7.5px] px-1.5 py-0.2 rounded border font-bold ${
+                      isActive 
+                        ? 'bg-[var(--color-brand-coral)] text-white border-[#1f1d1b]' 
+                        : 'bg-white text-gray-600 border-gray-300'
+                    }`}>
+                      {member.name.split(' ')[1]} {isPlayer && '(您)'}
                     </span>
                   </div>
+                );
+              })}
 
-                  {/* Dialogue Bubble */}
-                  <div className="flex-1 flex flex-col">
-                    <div className="text-[8.5px] font-mono font-bold text-gray-400 uppercase mb-1">
-                      [ 💬 圓桌發言 / DEBATE DIALOGUE ]
+            </div>
+
+            {/* Conversation text box */}
+            <div className="flex-1 bg-white border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop flex flex-col justify-between min-h-[150px] relative">
+              {step !== 1 ? (
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="overflow-y-auto flex-1 pr-1">
+                    <div className="flex gap-3 items-center">
+                      <div className={`w-11 h-11 rounded-full border-2 border-[#1f1d1b] overflow-hidden shrink-0 ${getBlobBgClass(activeSpeakerId)} shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]`}>
+                        <img src={getRoleAvatar(activeSpeakerId)} alt={activeSpeakerId} className="w-full h-full object-cover scale-110" />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[8px] font-mono font-bold text-gray-400 block uppercase">[ ACTIVE SPEAKER ]</span>
+                        <h4 className="text-xs font-bold text-[#1f1d1b]">{getRoleName(activeSpeakerId)} {activeSpeakerId === playerRole.id && '(主角玩家)'}</h4>
+                      </div>
                     </div>
-                    <p className="text-[#1f1d1b] text-xs md:text-sm leading-relaxed font-serif font-semibold bg-[#FAF8F5] border-2 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop">
+                    
+                    <p className="mt-2 text-xs md:text-sm text-gray-700 leading-relaxed font-serif font-semibold bg-gray-50 border border-gray-200 p-3 rounded-lg">
                       {currentDialogue.text}
                     </p>
                   </div>
 
+                  <button 
+                    onClick={handleNext}
+                    className="btn-flat-action w-full mt-3 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 font-bold shadow-flat-pop"
+                  >
+                    {currentDialogue.buttonText}
+                    <ChevronRight size={14} />
+                  </button>
                 </div>
-              </div>
-
-              {/* Action Button inside Dialog */}
-              <div className="mt-4 pt-3 border-t-2 border-[#1f1d1b] shrink-0">
-                <button
-                  onClick={handleNext}
-                  className="btn-flat-action w-full py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-flat-pop"
-                >
-                  {currentDialogue.buttonText}
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Choices Selection Panel */
-            <div className="flex-1 flex flex-col justify-between min-h-0">
-              <div className="flex-1 overflow-y-auto pr-1 text-left">
-                <span className="text-[8.5px] font-mono font-bold text-gray-400 uppercase block mb-3">
-                  [ 🗳️ 請代表市民登記您的空間提案 / SELECT YOUR CHOICE ]
-                </span>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  {currentRound.choices.map((choice) => (
-                    <button
-                      key={choice.id}
-                      onClick={() => handleChoiceSelect(choice)}
-                      className="text-left p-3.5 border-2 border-[#1f1d1b] hover:border-[var(--color-brand-coral)] hover:bg-[#FAF8F5] bg-white rounded-xl shadow-flat-pop transition-all duration-200 cursor-pointer group flex flex-col justify-between h-full"
-                    >
-                      <div className="flex items-start mb-2">
-                        <div className="w-5 h-5 rounded-full bg-gray-150 border-2 border-[#1f1d1b] text-gray-700 group-hover:bg-[var(--color-brand-coral)] group-hover:text-white flex items-center justify-center font-bold text-[9px] mr-2 shrink-0 transition-colors font-mono">
-                          {choice.id.replace(/[0-9]/g, '').toUpperCase()}
-                        </div>
-                        <span className="text-xs text-[#1f1d1b] font-bold leading-snug">
-                          {choice.text}
-                        </span>
-                      </div>
-                      
-                      {/* Option impacts */}
-                      <div className="flex gap-1.5 flex-wrap mt-1.5 border-t border-dashed border-gray-200 pt-1.5 text-[8px] font-bold">
-                        {Object.entries(choice.effects).map(([key, val]) => {
-                          if (val === 0) return null;
-                          const label = getMetricLabel(key);
-                          const style = getMetricColor(key);
-                          return (
-                            <span key={key} className={`px-1.5 py-0.2 rounded border ${style}`}>
-                              {label}: {val > 0 ? '+' : ''}{val}
+              ) : (
+                /* Choice Selection options cards */
+                <div className="flex-1 flex flex-col justify-between text-left">
+                  <div>
+                    <span className="text-[8.5px] font-mono font-bold text-gray-400 block mb-2">[ 🗳️ 請代表您的市民立場，提交共創規劃提案 ]</span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {currentRound.choices.map(choice => (
+                        <button
+                          key={choice.id}
+                          onClick={() => handleChoiceSelect(choice)}
+                          className="p-3 border-2 border-[#1f1d1b] hover:border-[var(--color-brand-coral)] hover:bg-[#FAF8F5] bg-white rounded-lg shadow-[2px_2px_0px_0px_#1f1d1b] transition-all cursor-pointer flex flex-col justify-between"
+                        >
+                          <div className="flex items-start">
+                            <span className="w-4 h-4 rounded-full bg-gray-100 border border-[#1f1d1b] text-gray-700 flex items-center justify-center font-bold text-[8.5px] mr-2 shrink-0 font-mono">
+                              {choice.id.slice(-1).toUpperCase()}
                             </span>
-                          );
-                        })}
-                      </div>
-                    </button>
-                  ))}
+                            <span className="text-xs text-[#1f1d1b] font-bold leading-normal">{choice.text}</span>
+                          </div>
+                          
+                          {/* Option impact values */}
+                          <div className="flex gap-1.5 flex-wrap mt-1.5 border-t border-dashed border-gray-200 pt-1 text-[8px] font-bold">
+                            {Object.entries(choice.effects).map(([key, val]) => {
+                              if (val === 0) return null;
+                              return (
+                                <span key={key} className={`px-1.5 py-0.2 rounded border ${getMetricColor(key)}`}>
+                                  {getMetricLabel(key)}: {val > 0 ? '+' : ''}{val}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+
+          </div>
+
+          {/* Right Column: Hand of Collected Insight Cards */}
+          <div className="w-full lg:w-72 bg-gray-50 border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop flex flex-col shrink-0 overflow-y-auto max-h-48 lg:max-h-none text-left">
+            <div className="flex items-center gap-1.5 mb-2 border-b border-gray-200 pb-1.5">
+              <span className="text-xs font-bold text-[#1f1d1b] font-serif">[ 💡 您的公民觀點卡手牌 ]</span>
+            </div>
+            
+            <div className="space-y-2.5">
+              {parsedInsights.map((card, idx) => (
+                <div 
+                  key={idx}
+                  className="bg-white border-2 border-[#1f1d1b] p-2.5 rounded-lg shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden hover:scale-[1.02] transition-transform duration-200"
+                >
+                  {/* Stamp background indicator */}
+                  <div className="absolute top-1 right-2 text-xs font-extrabold opacity-30 select-none pointer-events-none">
+                    💡 CARD
+                  </div>
+
+                  <span className="px-1.5 py-0.2 bg-blob-blue border border-[#1f1d1b] text-[8px] font-bold rounded">
+                    {card.title}
+                  </span>
+                  
+                  <p className="mt-1 text-[9.5px] leading-relaxed text-gray-600 font-bold font-sans">
+                    "{card.text}"
+                  </p>
+                </div>
+              ))}
+              {parsedInsights.length === 0 && (
+                <div className="text-gray-400 italic text-[10px] p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                  手牌中尚無收集到的觀點卡。
+                </div>
+              )}
+            </div>
+          </div>
 
         </div>
 
