@@ -135,8 +135,8 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
   const viewingRole = roles.find(r => r.id === viewingRoleId);
 
   return (
-    <div className="flex-1 flex flex-col p-6 bg-[var(--color-bg-warm)] h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto w-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-8 shadow-flat-pop-lg relative flex flex-col min-h-[640px]">
+    <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden">
+      <div className="w-full h-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-6 md:p-8 shadow-flat-pop-lg relative flex flex-col overflow-hidden">
         
         {/* Progress header */}
         <div className="flex justify-between items-center mb-6 border-b-3 border-[#1f1d1b] pb-4 shrink-0">
@@ -248,7 +248,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
         {/* RPG Dialogue Popup Overlay for Character Details */}
         {viewingRole && (
           <div className="absolute inset-0 bg-[#1f1d1b]/40 backdrop-blur-xs flex items-center justify-center p-4 z-45 animate-fade-in rounded-2xl">
-            <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-flat-pop-lg relative animate-scale-in flex flex-col gap-5 text-left select-none z-50">
+            <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 md:p-8 max-w-3xl w-full shadow-flat-pop-lg relative animate-scale-in flex flex-col md:flex-row gap-6 text-left select-none z-50 overflow-y-auto max-h-[90%] md:max-h-none">
               
               {/* Close Button */}
               <button 
@@ -258,73 +258,83 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
                 <X size={20} />
               </button>
 
-              {/* Dialogue Header */}
-              <div className="flex items-center gap-4 border-b-3 border-[#1f1d1b] pb-4">
-                <div className={`w-15 h-15 rounded-full border-3 border-[#1f1d1b] ${getBlobBgClass(viewingRole.id)} flex items-center justify-center shrink-0 overflow-hidden shadow-[2px_2px_0px_0px_#1f1d1b]`}>
-                  <img 
-                    src={getRoleAvatar(viewingRole.id)} 
-                    alt={viewingRole.name} 
-                    className="w-full h-full object-cover scale-110" 
-                  />
+              {/* Left Side: Full-body Character Card */}
+              <div className={`w-full md:w-2/5 rounded-xl border-3 border-[#1f1d1b] ${getBlobBgClass(viewingRole.id)} flex flex-col items-center justify-center p-4 relative overflow-hidden shadow-flat-pop shrink-0 min-h-[250px] md:min-h-0`}>
+                <div className="absolute top-2 left-2 bg-white border-2 border-[#1f1d1b] px-2 py-0.5 rounded text-[8px] font-bold text-[#1f1d1b] shadow-[1px_1px_0px_0px_#1f1d1b] z-10 font-serif">
+                  CIVIC AVATAR
                 </div>
-                <div>
-                  <div className="font-mono text-[9px] text-gray-400 uppercase tracking-widest">[ {viewingRole.id.toUpperCase()} // PROFILE ]</div>
-                  <h2 className="text-xl font-extrabold text-[#1f1d1b] font-serif leading-tight">{getCharacterFullName(viewingRole.id)}</h2>
-                  <span className="px-2 py-0.5 mt-1 bg-blob-yellow border-2 border-[#1f1d1b] text-[9px] font-bold text-[#1f1d1b] rounded-full shadow-[1px_1px_0px_0px_#1f1d1b] inline-block font-sans">
-                    代表市民利益：{viewingRole.name}
-                  </span>
-                </div>
+                <img 
+                  src={`/char_${viewingRole.id}.png`} 
+                  alt={viewingRole.name} 
+                  className="h-44 md:h-64 object-contain select-none pointer-events-none drop-shadow-[4px_4px_0px_rgba(0,0,0,0.15)] transform hover:scale-105 transition-transform"
+                />
               </div>
 
-              {/* Dialogue Bubble Styled Details Body */}
-              <div className="relative bg-[#FAF8F5] border-3 border-[#1f1d1b] p-5 rounded-xl shadow-flat-pop">
-                {/* Speech Arrow */}
-                <div className="absolute top-[-10px] left-8 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-[#1f1d1b]" />
-                <div className="absolute top-[-7px] left-8 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-[#FAF8F5]" />
+              {/* Right Side: Dialogue Profile Info */}
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Title Header */}
+                  <div className="flex items-center gap-3 border-b-2 border-dashed border-gray-300 pb-3 mb-3">
+                    <div className={`w-10 h-10 rounded-full border-2 border-[#1f1d1b] ${getBlobBgClass(viewingRole.id)} flex items-center justify-center overflow-hidden shrink-0`}>
+                      <img src={getRoleAvatar(viewingRole.id)} alt={viewingRole.name} className="w-full h-full object-cover scale-110" />
+                    </div>
+                    <div>
+                      <div className="font-mono text-[8px] text-gray-400 uppercase tracking-widest">[ {viewingRole.id.toUpperCase()} // PROFILE ]</div>
+                      <h2 className="text-lg font-extrabold text-[#1f1d1b] font-serif leading-tight">{getCharacterFullName(viewingRole.id)}</h2>
+                    </div>
+                  </div>
 
-                {/* Quote */}
-                <div className="mb-4 text-xs font-semibold text-[#1f1d1b] font-serif italic border-l-3 border-[var(--color-brand-coral)] pl-3 leading-relaxed">
-                  {viewingRole.quote}
-                </div>
+                  {/* Stance Details Panel */}
+                  <div className="relative bg-[#FAF8F5] border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop mb-4">
+                    {/* Speech bubble pointer */}
+                    <div className="hidden md:block absolute left-[-10px] top-5 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-r-[10px] border-r-[#1f1d1b]" />
+                    <div className="hidden md:block absolute left-[-7px] top-5 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-r-[10px] border-r-[#FAF8F5]" />
 
-                {/* Core Values */}
-                <div className="mb-4">
-                  <span className="font-bold text-[10.5px] text-[#8ea63d] block mb-2">🌿 核心價值 / VALUES</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {viewingRole.coreValues.split('、').map((tag, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-white border-2 border-[#1f1d1b] text-[#1f1d1b] rounded text-[10px] font-bold shadow-[1px_1px_0px_0px_#1f1d1b]">
-                        {tag.trim()}
-                      </span>
-                    ))}
+                    {/* Quote */}
+                    <div className="mb-3 text-[11px] font-semibold text-[#1f1d1b] font-serif italic border-l-3 border-[var(--color-brand-coral)] pl-2.5 leading-relaxed">
+                      {viewingRole.quote}
+                    </div>
+
+                    {/* Core Values */}
+                    <div className="mb-3">
+                      <span className="font-bold text-[10px] text-[#8ea63d] block mb-1">🌿 核心價值 / VALUES</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {viewingRole.coreValues.split('、').map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 bg-white border-2 border-[#1f1d1b] text-[#1f1d1b] rounded text-[9px] font-bold shadow-[1px_1px_0px_0px_#1f1d1b]">
+                            {tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Key Concerns */}
+                    <div>
+                      <span className="font-bold text-[10px] text-[#79afd3] block mb-0.5">🔍 關注焦點 / CONCERNS</span>
+                      <p className="text-[10px] leading-relaxed text-[#1f1d1b] font-sans font-medium">
+                        {viewingRole.mainConcerns}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Key Concerns */}
-                <div>
-                  <span className="font-bold text-[10.5px] text-[#79afd3] block mb-1">🔍 關注焦點 / CONCERNS</span>
-                  <p className="text-[11px] leading-relaxed text-[#1f1d1b] font-sans font-medium">
-                    {viewingRole.mainConcerns}
-                  </p>
+                {/* Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                  <button
+                    onClick={() => {
+                      onRoleSelect(viewingRole.id);
+                      setViewingRoleId(null);
+                    }}
+                    className="flex-1 btn-flat-action bg-[var(--color-brand-green)] text-white hover:bg-[#a6bf4c] py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-flat-pop font-bold"
+                  >
+                    確認登記代表身分 ➔
+                  </button>
+                  <button
+                    onClick={() => setViewingRoleId(null)}
+                    className="btn-flat-action bg-white text-[#1f1d1b] hover:bg-gray-50 py-2.5 px-4 rounded-xl text-xs cursor-pointer border-3 border-[#1f1d1b] font-bold"
+                  >
+                    先去看看其他市民
+                  </button>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    onRoleSelect(viewingRole.id);
-                    setViewingRoleId(null);
-                  }}
-                  className="flex-1 btn-flat-action bg-[var(--color-brand-green)] text-white hover:bg-[#a6bf4c] py-3 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer shadow-flat-pop font-bold"
-                >
-                  確認以此身分開始踏查 ➔
-                </button>
-                <button
-                  onClick={() => setViewingRoleId(null)}
-                  className="btn-flat-action bg-white text-[#1f1d1b] hover:bg-gray-50 py-3 px-5 rounded-xl text-xs cursor-pointer border-3 border-[#1f1d1b] font-bold"
-                >
-                  先去看看其他市民
-                </button>
               </div>
 
             </div>
