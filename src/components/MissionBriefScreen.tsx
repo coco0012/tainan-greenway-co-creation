@@ -85,8 +85,13 @@ export const MissionBriefScreen: React.FC<MissionBriefScreenProps> = ({ playerRo
 
         </div>
 
+        {/* Source Note Label */}
+        <div className="text-[8.5px] text-gray-400 font-mono select-none text-left mt-2 border-t border-dashed border-gray-200 pt-2 shrink-0">
+          <span>⚠️ 依官方公開資訊整理之原型資料 / Source-informed prototype data</span>
+        </div>
+
         {/* Bottom Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t-3 border-[#1f1d1b] pt-5 mt-4 shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t-3 border-[#1f1d1b] pt-4 mt-2 shrink-0">
           <div className="text-[10.5px] font-semibold text-gray-500 font-sans flex items-center gap-1">
             <Users size={14} className="text-[var(--color-brand-blue)]" />
             <span>您已收集好踏查資料，做好代表協商的準備。</span>

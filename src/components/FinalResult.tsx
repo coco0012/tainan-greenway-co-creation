@@ -5,6 +5,7 @@ import { strategyResults } from '@/data/strategyResults';
 import { calculateStrategy } from '@/lib/gameLogic';
 import { Greenway25DMap } from './Greenway25DMap';
 import { CheckCircle, RefreshCw } from 'lucide-react';
+import { sourceNotes } from '@/data/officialGreenwayData';
 
 interface FinalResultProps {
   scores: Effect;
@@ -334,12 +335,27 @@ export const FinalResult: React.FC<FinalResultProps> = ({
               本案經由代表「{playerRole?.name}」的主角玩家於市民協商會議中，與周邊居民、在地店家、騎士代表、環保人士及市府科長進行圓桌辯論。各方針對高架自行車道的私密性、商圈人流與都市減碳降溫指標達成初步共識，並移交草案工作台由代表進行空間對策調整，最終獲得多數代表簽署核備。
             </p>
           </div>
-          <div className="bg-gray-50 border-2 border-[#1f1d1b] p-4 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
+          <div className="bg-gray-50 border-2 border-[#1f1d1b] p-4 rounded-xl shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between font-sans">
             <div>
-              <span className="font-bold text-[10px] text-gray-500 block mb-1">📊 工程資料來源與技術宣告 / SOURCE DATA & TECHNICAL NOTES</span>
-              <p className="text-gray-650 text-[10px]">
-                規劃範圍對齊台南市縱貫鐵路地下化釋出之線性地表帶（STA 0+000 - STA 1+400）。指標演算模型基於參與式都市設計（Participatory Design）與都市微氣候保水效益指標，提供視覺化的數位雙生概念驗證原型，暫無實體API連線。
+              <span className="font-bold text-[10px] text-gray-500 block mb-1">📊 官方工程來源與技術宣告 / SOURCE DATA & NOTES</span>
+              <p className="text-[#1f1d1b] text-[9.5px] leading-relaxed">
+                {sourceNotes.technicalNotice}
               </p>
+              <div className="mt-3 border-t border-dashed border-gray-300 pt-2 text-[9px]">
+                <span className="font-bold text-gray-500 block mb-1">🔗 官方專案參考連結：</span>
+                <ul className="space-y-1">
+                  {sourceNotes.sourcesList.map((src, idx) => (
+                    <li key={idx}>
+                      • <a href={src.url} target="_blank" rel="noreferrer" className="underline font-bold text-[var(--color-brand-blue)] hover:text-blue-700">
+                        {src.name}
+                      </a>
+                    </li>
+                  ))}
+                  <li>
+                    • 臺南市政府工務局「臺南市鐵路地下化園道開闢工程委託設計及監造」公開資料
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

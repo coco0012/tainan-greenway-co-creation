@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StakeholderRole } from '@/data/roles';
 import { Greenway25DMap } from './Greenway25DMap';
 import { Sparkles, HelpCircle, Check, ArrowRight, Lightbulb, Keyboard, Info } from 'lucide-react';
+import { officialSpatialSegments, sourceNotes } from '@/data/officialGreenwayData';
 
 interface ExplorationScreenProps {
   playerRole: StakeholderRole;
@@ -283,6 +284,12 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
                   <span className="font-bold text-[9px] text-rose-500 block mb-0.5">⚡ 關鍵規劃衝突點 / SPATIAL CONFLICT</span>
                   <p className="text-[#1f1d1b] font-semibold leading-relaxed">{currentSeg.conflict}</p>
                 </div>
+                <div>
+                  <span className="font-bold text-[9px] text-[var(--color-brand-green)] block mb-0.5">🏛️ 官方規劃考量 / OFFICIAL RELEVANCE</span>
+                  <p className="text-[#1f1d1b] font-semibold leading-relaxed">
+                    {officialSpatialSegments.find(s => s.id === selectedSegId)?.officialRelevance}
+                  </p>
+                </div>
                 <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
                   <span className="font-bold text-[8px] text-gray-500 block mb-0.5">✏️ 踏查現場規劃觀察 / OBSERVATION NOTE</span>
                   <p className="italic text-gray-600 text-[10.5px] leading-relaxed">{currentSeg.observation}</p>
@@ -290,9 +297,15 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
               </div>
             </div>
 
-            {/* Collected Insight status check */}
-            <div className="mt-3 pt-2.5 border-t border-dashed border-gray-200 flex justify-between items-center shrink-0">
-              <span className="text-[9px] font-bold text-gray-400 font-mono">[ INSIGHT CARD STATUS ]</span>
+            {/* Collected Insight status check with Source Note */}
+            <div className="mt-3 pt-2.5 border-t border-dashed border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shrink-0">
+              <div className="text-left font-sans select-none text-[8.5px] text-gray-400">
+                <div className="font-bold leading-none">{sourceNotes.visibleNote}</div>
+                <div className="mt-1">
+                  來源：<a href={sourceNotes.sourcesList[0].url} target="_blank" rel="noreferrer" className="underline hover:text-[var(--color-brand-blue)] font-bold">{sourceNotes.sourcesList[0].name}</a>
+                </div>
+              </div>
+              
               {collectedInsights[currentSeg.id] ? (
                 <span className="px-2.5 py-1 bg-blob-green border-2 border-[#1f1d1b] text-[10px] font-bold text-[#3e5f4c] rounded shadow-[1px_1px_0px_0px_#1f1d1b] flex items-center gap-1 font-serif">
                   <Check size={11} /> 觀點卡已解鎖 💡
