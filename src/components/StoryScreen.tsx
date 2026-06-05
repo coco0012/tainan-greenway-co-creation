@@ -11,7 +11,7 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({ onComplete }) => {
   const slides = [
     {
       title: '台南鐵路地下化與綠色縫合',
-      subtitle: '釋出 1.4 公里的綠帶畫卷，迎來百年都市縫合機遇',
+      subtitle: '釋出 1.4 公路的綠帶畫卷，迎來百年都市縫合機遇',
       content: '隨著縱貫線鐵路地下化計畫的推進，地表的鐵軌障礙將被徹底消除，在台南市中心釋出了一條長達 1.4 公里、寬度數十公尺的帶狀開放空間。這條騰空的新生綠廊，是台南百年來最大規模的都市縫合與空間重構機會！',
       badge: '🗺️ 空間脈絡背景',
       image: '/landing_cover.png',
@@ -24,6 +24,14 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({ onComplete }) => {
       badge: '⚖️ 利益關係人衝突',
       image: '/greenway_watercolor.png',
       color: 'bg-blob-yellow'
+    },
+    {
+      title: '當鐵路進入地下，地面上的綠園道該屬於誰？',
+      subtitle: '核心空間主權拷問 ── 綠園道的命運由您共同審議',
+      content: '這個長達 1.4 公里的線性公共空間，是應該優先作為騎士的「高速通勤路廊」？還是應該還給沿線居民與店鋪店家的「地面層慢活街區」？又或者是屬於高齡市民與環保人士的「降溫林蔭生態帶」？不同的空間分配，決定了這座城市未來的公共生活面貌。',
+      badge: '❓ 公民共創核心詰問',
+      image: '/future_city_25d.png',
+      color: 'bg-blob-pink'
     },
     {
       title: '您的市民共創協商使命',
@@ -60,7 +68,7 @@ export const StoryScreen: React.FC<StoryScreenProps> = ({ onComplete }) => {
           <span className="px-3 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
             【 PHASE 0 : 綠園道開場故事簡介 】
           </span>
-          <span className="text-xs font-mono font-bold text-gray-400">故事進度：{slide + 1} / 3 頁</span>
+          <span className="text-xs font-mono font-bold text-gray-400">故事進度：{slide + 1} / 4 頁</span>
         </div>
 
         {/* Content Box */}

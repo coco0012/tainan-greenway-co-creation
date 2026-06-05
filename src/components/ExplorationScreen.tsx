@@ -38,73 +38,73 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   const segments: Segment[] = [
     {
       id: 0,
-      name: '住宅社區段',
+      name: '住宅段',
       sta: 'STA 0+000 - 0+400',
       left: 20,
       npcId: 'resident',
       npcName: '阿明',
-      npcTitle: '居民代表',
-      condition: '緊鄰透天住宅與社區小巷，路面寬度較窄，生活氛圍安寧。',
-      conflict: '高架自行車道帶來的隱私干擾 vs 騎士的高速通勤效率。',
-      concern: '居民阿明擔心隱私被看光；通勤族小宇希望有直達不中斷的連續高架路段。',
-      observation: '現場觀察發現居民經常在二樓露台晾衣或乘涼，若興建高架，距離其窗戶僅有數公尺，視覺壓迫感極重。',
-      dialogue: '「我家就在舊鐵軌路廊旁邊，自行車高架如果緊貼著二樓陽台，我們每天在家裡都覺得有人在看我，非常不自在。如果能把自行車道降低到地面層，拉開與居民陽台的距離，甚至增加防隱私的隔板或垂直綠化，生活會安全很多。」'
+      npcTitle: '周邊居民代表',
+      condition: '住宅建築直接面向未來的綠園道。',
+      conflict: '高架自行車道可能會造成視覺侵入與隱私壓力。',
+      concern: '周邊居民',
+      observation: '高架自行車道設計如果過於貼近住宅二樓，將對沿線住戶的生活隱私與日照採光造成實質干擾。',
+      dialogue: '「住宅段需要處理視線遮蔽、夜間噪音與生活安寧。高架自行車道如果離二樓陽台太近，每天生活都像被公開展示，生活會很不自在。希望降至地面層或增設遮蔽隔板！」'
     },
     {
       id: 1,
-      name: '繁榮商業段',
+      name: '商業段',
       sta: 'STA 0+400 - 0+700',
       left: 40,
       npcId: 'shop_owner',
       npcName: '莉雅',
       npcTitle: '在地店家代表',
-      condition: '沿線商店林立，包含傳統美食、零售店家與特色咖啡廳，人潮絡繹不絕。',
-      conflict: '自行車高架快速過境 vs 地面零售商業活力流失。',
-      concern: '店家莉雅強烈希望引導車流降至地面，增加店面能見度與客流量；通勤族小宇擔心地面層人車混雜減慢車速。',
-      observation: '此路段是鐵路地下化後的經濟繁榮帶，若將自行車道維持在高架二樓快速通過，騎士直接飛越，對地面零售店家完全沒有引客與導流效果。',
-      dialogue: '「如果騎士全都從高架天橋上飛越過去，我們地面層的麵店、飲料店、傳統美食就吃不到任何商業人氣。我希望能把自行車道引導到地面，打造慢速人車共享街區與臨時停靠站，把人流帶進店裡！」'
+      condition: '商家依賴地面人流與短暫停留。',
+      conflict: '若騎士走高架路廊飛越街區，地方店鋪恐流失能見度與客源。',
+      concern: '在地店家',
+      observation: '本區段店家林立，若是高架化設計，騎士高速通過將跳過地面商圈，不利於地區商業復甦與活力。',
+      dialogue: '「商業段需要把通行效率轉化為可停留的人流。如果騎士都從高架上通過，我們地面層的麵店、飲料店就吃不到人流。希望引導自行車降至地面，打造慢速人車共享街區！」'
     },
     {
       id: 2,
-      name: '台南車站樞紐',
+      name: '車站節點',
       sta: 'STA 0+700',
       left: 56,
       npcId: 'government',
       npcName: '林科長',
-      npcTitle: '市府與景觀代表',
-      condition: '台南舊車站後方軌道區段，是鐵路地下化後的歷史地景象徵節點。',
-      conflict: '保留百年舊月台與軌道遺址 vs 完全移除改建為水泥轉運接駁廣場。',
-      concern: '市民希望留存台南的出鄉與返鄉集體記憶；市府部門則考量公眾交通接駁效率與空曠活動空間。',
-      observation: '舊月台石砌古樸，鐵軌仍躺在原處。這裡是串聯綠園道文化軸線的精神地標，也是呈現台南鐵道文化的絕佳場所。',
-      dialogue: '「這段是綠園道的歷史紐帶。我們希望能保留台南舊車站的古樸月台與舊鐵軌，整理周邊植栽，打造一座鐵道歷史廣場。這不僅能提供市民散步休憩的廣場，還能把這座城市的記憶留在公共地景中。」'
+      npcTitle: '市府 / 設計師代表',
+      condition: '車站區域連結步行、自行車、大眾運輸與 YouBike 系統。',
+      conflict: '快速通過與轉乘便利性可能與行人步行舒適度產生衝突。',
+      concern: '通勤 / 騎士',
+      observation: '鐵路地下化後的舊車站節點是交通匯集處，如何在保障行人安全步行的同時，維護高效率的轉乘與騎行？',
+      dialogue: '「車站節點需要整合轉乘效率與步行安全。我們希望能合理劃分快慢行駛區域，整合 YouBike 與公車大眾運輸，並開闢行人優先廣場，達到人車分流與安全步行。」'
     },
     {
       id: 3,
-      name: '幹道交叉路口',
+      name: '主要路口',
       sta: 'STA 0+700 - 0+900',
       left: 72,
       npcId: 'commuter',
       npcName: '小宇',
-      npcTitle: '通勤與自行車族代表',
-      condition: '縱向主要交通幹道（如青年路路口）交會處，平日車流量龐大且車速極快。',
-      conflict: '自行車平面穿越的車禍安全風險 vs 立體人行陸橋/地下道的建設經費與障礙。',
-      concern: '通勤族小宇擔心平面過路口有極大安全威脅；高齡長者陳伯伯害怕人車衝突與過陡的天橋斜坡。',
-      observation: '尖峰時間幹道車流沒有間斷，平面直接穿越不僅影響騎乘連貫性，亦增加人車交織的碰撞風險，急需安全分隔設施。',
-      dialogue: '「這段是穿越大馬路的十字路口，平時上下班時間汽機車車速極快。直接在平面騎過去，每次都要停等很久的紅綠燈，而且人車混雜真的非常危險。希望能做立體化人車分流，或是至少有專用自行車綠燈號誌！」'
+      npcTitle: '通勤 / 騎士代表',
+      condition: '主要幹道切斷了綠園道的空間連續性。',
+      conflict: '平面穿越可能較為危險，但連續的立體高架基礎設施會產生空間壓迫感。',
+      concern: '市府 / 設計師',
+      observation: '綠廊面臨十字路口繁忙車流，平面交織的衝突點極多，需有專用號誌控制或立體化分流對策。',
+      dialogue: '「主要路口適合討論局部高架或受保護穿越。上下班時間青年路口車流量超級大，直接平面通過有極大安全威脅。希望設計自行車專用陸橋或是受保護的平面路口設計！」'
     },
     {
       id: 4,
-      name: '綠意生態廊道',
+      name: '生態綠帶段',
       sta: 'STA 0+900 - 1+400',
       left: 88,
       npcId: 'environmentalist',
       npcName: '綠野老師',
-      npcTitle: '環保志工代表',
-      condition: '綠園道最南端，面臨台南炎熱曝曬的氣候，缺乏林蔭與遮光。',
-      conflict: '大面積保水林蔭生態綠帶 vs 水泥硬質活動鋪面廣場。',
-      concern: '綠野老師提倡複層造林與雨水花園以調節都市熱島效應；高齡長者陳伯伯希望有充足的遮陰長椅與平緩鋪面。',
-      observation: '台南夏季曝曬強烈。若全鋪設水泥硬路幅，白天熱輻射效應會使地表溫度飆高，居民根本無法停留散步，不利於微氣候降溫。',
-      dialogue: '「台南的夏天高溫驚人，我們不需要一條鋪滿冰冷水泥的水泥路！我們應該多種植在地大樹，規劃大片林蔭綠帶、透水鋪面與雨水花園。讓綠園道成為城市裡的冷氣風脊，還能提供小動物棲息的生態廊道。」'
+      npcTitle: '環保團體代表',
+      condition: '綠園道可成為台南市區的降溫綠化廊道。',
+      conflict: '過多的水泥硬鋪面會加劇熱島效應並降低基地透水率。',
+      concern: '環保團體 / 高齡漫步者',
+      observation: '本段南部綠蔭環繞。如果全鋪設不透水的水泥硬質鋪面，都市風道將受阻，熱島效應會讓地表高溫難耐。',
+      dialogue: '「生態段需要樹蔭、雨水花園、透水鋪面與舒適步行環境。台南夏季極度炎熱，鋪面不應過度硬質化，多栽植複層林蔭與雨水花園，才能為城市降溫減碳。」'
     }
   ];
 
@@ -158,13 +158,15 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   };
 
   const totalCollected = Object.values(collectedInsights).filter(Boolean).length;
-  const isExplorationDone = totalCollected === 5;
+  const isExplorationDone = totalCollected >= 3;
 
   const currentSeg = segments[selectedSegId];
 
   const handleFinishExploration = () => {
     if (isExplorationDone) {
-      const insightNames = segments.map(s => `${s.name}的觀點：${s.npcName}`);
+      const insightNames = segments
+        .filter(s => collectedInsights[s.id])
+        .map(s => `${s.name}的觀點：${s.npcName}`);
       onExploreComplete(insightNames);
     }
   };
@@ -175,10 +177,10 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
         
         {/* Progress Header */}
         <div className="flex justify-between items-center mb-4 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
-          <span className="px-3.5 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 2 & 3 : 實地踏查與公民觀點收集 】
+          <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
+            【 PHASE 2 : 實地踏查與公民觀點收集 】
           </span>
-          <span className="text-xs font-mono font-bold text-gray-400">已收集公民觀點：{totalCollected} / 5</span>
+          <span className="text-xs font-mono font-bold text-gray-400">已收集公民觀點：{totalCollected} / 5 (收集至少 3 個解鎖簡報)</span>
         </div>
 
         {/* Info panel */}

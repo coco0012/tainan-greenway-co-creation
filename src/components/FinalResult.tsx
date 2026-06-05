@@ -25,6 +25,39 @@ export const FinalResult: React.FC<FinalResultProps> = ({
   const allScores = Object.values(scores);
   const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
 
+  const getBadgeStyles = (key: string) => {
+    switch (key) {
+      case 'ecological':
+        return { label: '城市降溫生態型', emoji: '🌿', bg: 'bg-[#e2f0d9]', border: 'border-[#5a7a68]', text: 'text-[#3e5f4c]' };
+      case 'mobility':
+        return { label: '交通效率導向型', emoji: '🚲', bg: 'bg-[#deebf7]', border: 'border-[#6b8b9b]', text: 'text-[#4a6b82]' };
+      case 'residential':
+        return { label: '社區修補安寧型', emoji: '🏡', bg: 'bg-[#fce4d6]', border: 'border-[#d37b70]', text: 'text-[#b2574e]' };
+      case 'commercial':
+        return { label: '地方經濟活力型', emoji: '🛍️', bg: 'bg-[#fff2cc]', border: 'border-[#e2a968]', text: 'text-[#b37a3c]' };
+      case 'cultural':
+        return { label: '鐵道歷史記憶廊道', emoji: '🚂', bg: 'bg-[#ededed]', border: 'border-stone-400', text: 'text-stone-600' };
+      default:
+        return { label: '平衡共創複合型', emoji: '⚖️', bg: 'bg-[#e8f4f0]', border: 'border-[#79afd3]', text: 'text-[#3e5f4c]' };
+    }
+  };
+
+  const badgeInfo = getBadgeStyles(strategyKey);
+
+  const parsedActions = spatialActions.map(action => {
+    const parts = action.split('：');
+    if (parts.length >= 2) {
+      return {
+        segment: parts[0],
+        strategy: parts.slice(1).join('：'),
+      };
+    }
+    return {
+      segment: '變更路段',
+      strategy: action,
+    };
+  });
+
   const getRoleAvatar = (id: string) => {
     switch (id) {
       case 'resident': return '/avatar_resident.png';
@@ -77,10 +110,26 @@ export const FinalResult: React.FC<FinalResultProps> = ({
           <span className="text-xs font-mono font-bold text-gray-400">專案代號：Tainan Greenway Memo</span>
         </div>
 
-        <div className="uppercase tracking-widest text-[10px] font-mono text-[var(--color-brand-coral)] font-bold mb-1.5">
-          Civic Co-Creation Memo / 公民協商空間規劃成果
+        {/* Strategy Header with Badge */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-5">
+          <div className="flex-1">
+            <div className="uppercase tracking-widest text-[10px] font-mono text-[var(--color-brand-coral)] font-bold mb-1.5">
+              Civic Co-Creation Memo / 公民協商空間規劃成果
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-[#1f1d1b] title-memphis leading-tight">{strategy.title}</h1>
+          </div>
+          
+          {/* Badge Display */}
+          <div className="shrink-0 flex items-center">
+            <div className={`px-4 py-2.5 rounded-xl border-3 border-[#1f1d1b] ${badgeInfo.bg} shadow-[3px_3px_0px_0px_#1f1d1b] flex items-center gap-2.5 rotate-[-2deg] hover:rotate-0 transition-transform duration-200`}>
+              <span className="text-2xl">{badgeInfo.emoji}</span>
+              <div className="text-left select-none">
+                <div className="text-[8px] font-extrabold text-gray-500 font-mono tracking-wider">STRATEGY UNLOCKED</div>
+                <div className={`text-xs font-black tracking-tight ${badgeInfo.text}`}>{badgeInfo.label}</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl font-extrabold mb-6 text-[#1f1d1b] title-memphis leading-tight">{strategy.title}</h1>
         
         {/* 2.5D Future City Vision Image */}
         <div className="w-full h-56 md:h-72 rounded-xl overflow-hidden border-3 border-[#1f1d1b] mb-8 shadow-flat-pop relative bg-blob-green">
@@ -123,68 +172,89 @@ export const FinalResult: React.FC<FinalResultProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          
-          {/* Spatial Actions Cards list */}
-          <div>
-            <h3 className="text-xs font-bold font-mono uppercase text-gray-400 mb-4 pb-2 border-b-2 border-[#1f1d1b]">
-              [ 審定執行的空間策略 / APPROVED ACTIONS ]
-            </h3>
-            <div className="space-y-3">
-              {spatialActions.map((action, index) => (
-                <div key={index} className="bg-white p-3.5 rounded-xl border-2 border-[#1f1d1b] flex items-start gap-3 shadow-flat-pop">
-                  <CheckCircle className="w-5 h-5 text-[var(--color-brand-green)] shrink-0 mt-0.5" />
-                  <span className="text-xs font-bold text-[#1f1d1b] leading-snug">{action}</span>
-                </div>
-              ))}
-              {spatialActions.length === 0 && (
-                <div className="text-gray-400 italic text-xs p-4 bg-white rounded-xl text-center border-2 border-dashed border-[#1f1d1b]">
-                  無施作變更空間策略。
-                </div>
-              )}
-            </div>
+        {/* Checklist Table - Selected Spatial Strategy for 5 Segments */}
+        <div className="mb-8">
+          <h3 className="text-xs font-bold font-mono uppercase text-gray-400 mb-4 pb-2 border-b-2 border-[#1f1d1b]">
+            [ 審定空間規劃施作方案對策 / SPATIAL STRATEGY CHECKLIST ]
+          </h3>
+          <div className="overflow-x-auto w-full border-3 border-[#1f1d1b] rounded-xl shadow-flat-pop bg-white">
+            <table className="w-full text-left border-collapse text-xs min-w-[500px]">
+              <thead>
+                <tr className="bg-gray-50 border-b-3 border-[#1f1d1b]">
+                  <th className="p-3 font-bold text-[#1f1d1b] font-serif w-1/4">空間路段</th>
+                  <th className="p-3 font-bold text-[#1f1d1b] font-serif w-7/12">選定施作對策</th>
+                  <th className="p-3 font-bold text-[#1f1d1b] font-serif text-center w-2/12">審定狀態</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-gray-200">
+                {parsedActions.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50/50">
+                    <td className="p-3.5 font-bold text-[#1f1d1b] font-serif">
+                      <span className="px-2.5 py-1 bg-gray-100 border border-gray-400 rounded text-[10px]">
+                        {item.segment}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-bold text-gray-700 font-sans leading-relaxed">
+                      {item.strategy}
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-50 text-green-700 border border-green-300 rounded-full font-bold text-[9px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        已審定
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {parsedActions.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="p-6 text-center text-gray-400 italic">
+                      無變更施作空間對策。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          {/* Final Indicators */}
-          <div>
-            <h3 className="text-xs font-bold font-mono uppercase text-gray-400 mb-4 pb-2 border-b-2 border-[#1f1d1b]">
-              [ 最終綠園道績效指標評估 / FINAL METRICS ]
-            </h3>
-            <div className="space-y-4 bg-white p-5 rounded-xl border-2 border-[#1f1d1b] shadow-flat-pop">
-              {Object.entries(scores).map(([key, value]) => {
-                let barColor = 'bg-gray-400';
-                let labelZh = key;
-                if (key === 'residential') { barColor = 'bg-[#d37b70]'; labelZh = '居住舒適'; }
-                else if (key === 'commercial') { barColor = 'bg-[#e2a968]'; labelZh = '商業活力'; }
-                else if (key === 'mobility') { barColor = 'bg-[#6b8b9b]'; labelZh = '交通效率'; }
-                else if (key === 'ecological') { barColor = 'bg-[#5a7a68]'; labelZh = '生態棲地'; }
-                else if (key === 'cultural') { barColor = 'bg-stone-400'; labelZh = '歷史記憶'; }
+        {/* Final Indicators */}
+        <div className="mb-8">
+          <h3 className="text-xs font-bold font-mono uppercase text-gray-400 mb-4 pb-2 border-b-2 border-[#1f1d1b]">
+            [ 最終綠園道績效指標評估 / FINAL METRICS ]
+          </h3>
+          <div className="space-y-4 bg-white p-5 rounded-xl border-2 border-[#1f1d1b] shadow-flat-pop">
+            {Object.entries(scores).map(([key, value]) => {
+              let barColor = 'bg-gray-400';
+              let labelZh = key;
+              if (key === 'residential') { barColor = 'bg-[#d37b70]'; labelZh = '居住舒適'; }
+              else if (key === 'commercial') { barColor = 'bg-[#e2a968]'; labelZh = '商業活力'; }
+              else if (key === 'mobility') { barColor = 'bg-[#6b8b9b]'; labelZh = '交通效率'; }
+              else if (key === 'ecological') { barColor = 'bg-[#5a7a68]'; labelZh = '生態棲地'; }
+              else if (key === 'cultural') { barColor = 'bg-stone-400'; labelZh = '歷史記憶'; }
 
-                const change = value - 50;
+              const change = value - 50;
 
-                return (
-                  <div key={key} className="space-y-1 font-sans text-xs">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span className="font-bold text-[#1f1d1b]">{labelZh}</span>
-                      <div className="flex items-center gap-1.5 font-mono">
-                        <span className="font-bold text-[#1f1d1b]">{value}</span>
-                        {change > 0 && <span className="text-[9.5px] font-bold text-green-600 px-1 bg-green-50 border border-green-100 rounded">+{change}</span>}
-                        {change < 0 && <span className="text-[9.5px] font-bold text-rose-500 px-1 bg-rose-50 border border-rose-100 rounded">{change}</span>}
-                      </div>
-                    </div>
-                    {/* Memphis progress bar track */}
-                    <div className="memphis-progress-track h-2.5 w-full bg-gray-100">
-                      <div 
-                        className={`memphis-progress-fill h-full ${barColor}`}
-                        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
-                      />
+              return (
+                <div key={key} className="space-y-1 font-sans text-xs">
+                  <div className="flex justify-between items-center font-semibold">
+                    <span className="font-bold text-[#1f1d1b]">{labelZh}</span>
+                    <div className="flex items-center gap-1.5 font-mono">
+                      <span className="font-bold text-[#1f1d1b]">{value}</span>
+                      {change > 0 && <span className="text-[9.5px] font-bold text-green-600 px-1 bg-green-50 border border-green-100 rounded">+{change}</span>}
+                      {change < 0 && <span className="text-[9.5px] font-bold text-rose-500 px-1 bg-rose-50 border border-rose-100 rounded">{change}</span>}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  {/* Memphis progress bar track */}
+                  <div className="memphis-progress-track h-2.5 w-full bg-gray-100">
+                    <div 
+                      className={`memphis-progress-fill h-full ${barColor}`}
+                      style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
         </div>
 
         {/* Stakeholders satisfaction matrix */}

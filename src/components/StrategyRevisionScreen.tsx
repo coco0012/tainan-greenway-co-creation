@@ -51,109 +51,121 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
   const segments: RevisionSegment[] = [
     {
       id: 0,
-      name: '住宅社區段 (Residential Segment)',
+      name: '住宅段',
       options: [
         {
           id: 'a',
-          text: '維持高架自行車道 (Mobility +15, Residential -15)',
-          effects: { residential: -15, commercial: 0, mobility: 15, ecological: 0, cultural: -10 },
-          actionText: '住宅區保持高架自行車道'
+          text: '地面慢速自行車道 (居住舒適 +5, 交通效率 +5, 生態棲地 +5)',
+          effects: { residential: 5, commercial: 0, mobility: 5, ecological: 5, cultural: 0 },
+          actionText: '住宅段：地面慢速自行車道'
         },
         {
           id: 'b',
-          text: '自行車道降至地面層 (Residential +15, Mobility -10)',
-          effects: { residential: 15, commercial: 0, mobility: -10, ecological: 0, cultural: 10 },
-          actionText: '住宅區自行車道降至地面層'
+          text: '局部高架設綠化隱私遮簾 (交通效率 +15, 居住舒適 -5, 生態棲地 +5, 歷史記憶 -5)',
+          effects: { residential: -5, commercial: 0, mobility: 15, ecological: 5, cultural: -5 },
+          actionText: '住宅段：局部高架設綠化隱私遮簾'
         },
         {
           id: 'c',
-          text: '部分高架 + 增設綠化隱私遮簾 (Residential +10, Mobility +10)',
-          effects: { residential: 10, commercial: 0, mobility: 10, ecological: -5, cultural: 0 },
-          actionText: '住宅區增設綠化隱私遮簾'
+          text: '社區安寧綠色緩衝帶 (居住舒適 +15, 生態棲地 +10, 歷史記憶 +5, 交通效率 -5)',
+          effects: { residential: 15, commercial: 0, mobility: -5, ecological: 10, cultural: 5 },
+          actionText: '住宅段：社區安寧綠色緩衝帶'
         }
       ]
     },
     {
       id: 1,
-      name: '繁榮商業段 (Commercial Segment)',
+      name: '商業段',
       options: [
         {
           id: 'a',
-          text: '維持高架快速通過 (Mobility +15, Commercial -15)',
-          effects: { residential: 0, commercial: -15, mobility: 15, ecological: 0, cultural: 0 },
-          actionText: '商業區維持高架快速通過'
+          text: '地面慢速人車共享街區 (商業活力 +15, 歷史記憶 +5, 交通效率 -5)',
+          effects: { residential: 0, commercial: 15, mobility: -5, ecological: 0, cultural: 5 },
+          actionText: '商業段：地面慢速人車共享街區'
         },
         {
           id: 'b',
-          text: '導引自行車降至地面 (Commercial +15, Mobility -5)',
-          effects: { residential: 0, commercial: 15, mobility: -5, ecological: 0, cultural: 10 },
-          actionText: '商業區導引自行車降至地面'
+          text: '自行車停靠點與遮陰休閒廣場 (商業活力 +10, 交通效率 +5, 生態棲地 +5, 歷史記憶 +5)',
+          effects: { residential: 0, commercial: 10, mobility: 5, ecological: 5, cultural: 5 },
+          actionText: '商業段：自行車停靠點與遮陰休閒廣場'
         },
         {
           id: 'c',
-          text: '打造慢速共享街區與停靠站 (Commercial +15, Residential +10)',
-          effects: { residential: 10, commercial: 15, mobility: 0, ecological: 0, cultural: 10 },
-          actionText: '商業區打造慢速共享街區與停靠站'
+          text: '店家物流裝卸與臨停區 (商業活力 +10, 交通效率 +10, 居住舒適 -5, 生態棲地 -5)',
+          effects: { residential: -5, commercial: 10, mobility: 10, ecological: -5, cultural: 0 },
+          actionText: '商業段：店家物流裝卸與臨停區'
         }
       ]
     },
     {
       id: 2,
-      name: '台南車站樞紐 (Station Node)',
+      name: '車站節點',
       options: [
         {
           id: 'a',
-          text: '保留舊月台與軌道歷史廣場 (Cultural +15, Ecological +10)',
-          effects: { residential: 0, commercial: 5, mobility: 0, ecological: 10, cultural: 15 },
-          actionText: '車站區保留月台軌道歷史廣場'
+          text: 'YouBike與大眾運輸轉乘樞紐 (交通效率 +15, 商業活力 +5, 生態棲地 -5)',
+          effects: { residential: 0, commercial: 5, mobility: 15, ecological: -5, cultural: 0 },
+          actionText: '車站節點：YouBike與大眾運輸轉乘樞紐'
         },
         {
           id: 'b',
-          text: '改建水泥轉運大廣場 (Mobility +15, Cultural -15)',
-          effects: { residential: 0, commercial: 5, mobility: 15, ecological: -10, cultural: -15 },
-          actionText: '車站區改建水泥轉運大廣場'
+          text: '行人優先漫步歷史廣場 (歷史記憶 +15, 生態棲地 +10, 居住舒適 +5, 商業活力 +5, 交通效率 -5)',
+          effects: { residential: 5, commercial: 5, mobility: -5, ecological: 10, cultural: 15 },
+          actionText: '車站節點：行人優先漫步歷史廣場'
+        },
+        {
+          id: 'c',
+          text: '清晰指引與慢速微行動特區 (交通效率 +10, 商業活力 +5, 歷史記憶 +5)',
+          effects: { residential: 0, commercial: 5, mobility: 10, ecological: 0, cultural: 5 },
+          actionText: '車站節點：清晰指引與慢速微行動特區'
         }
       ]
     },
     {
       id: 3,
-      name: '幹道交叉路口 (Major Crossing)',
+      name: '主要路口',
       options: [
         {
           id: 'a',
-          text: '設置立體交叉自行車專用陸橋 (Mobility +15, Ecological -5)',
-          effects: { residential: 0, commercial: 0, mobility: 15, ecological: -5, cultural: 0 },
-          actionText: '路口設置立體交叉自行車陸橋'
+          text: '局部自行車立體陸橋 (交通效率 +15, 生態棲地 -10, 居住舒適 -5, 歷史記憶 -5)',
+          effects: { residential: -5, commercial: 0, mobility: 15, ecological: -10, cultural: -5 },
+          actionText: '主要路口：局部自行車立體陸橋'
         },
         {
           id: 'b',
-          text: '採用地面行人優先平面路口 (Mobility -10, Residential +5)',
-          effects: { residential: 5, commercial: 0, mobility: -10, ecological: 5, cultural: 0 },
-          actionText: '路口採用地面層人行優先路口'
+          text: '地面保護型自行車道十字路口 (交通效率 +10, 居住舒適 +5)',
+          effects: { residential: 5, commercial: 0, mobility: 10, ecological: 0, cultural: 0 },
+          actionText: '主要路口：地面保護型自行車道十字路口'
+        },
+        {
+          id: 'c',
+          text: '人車分流專用號誌系統 (居住舒適 +10, 交通效率 +5, 生態棲地 +5)',
+          effects: { residential: 10, commercial: 0, mobility: 5, ecological: 5, cultural: 0 },
+          actionText: '主要路口：人車分流專用號誌系統'
         }
       ]
     },
     {
       id: 4,
-      name: '綠意生態廊道 (Ecological Segment)',
+      name: '生態綠帶段',
       options: [
         {
           id: 'a',
-          text: '全線鋪設高強度硬鋪面廣場 (Mobility +10, Ecological -15)',
-          effects: { residential: 0, commercial: 10, mobility: 10, ecological: -15, cultural: 0 },
-          actionText: '生態區鋪設高強度硬鋪面廣場'
+          text: '連續複層大樹林蔭冠層 (生態棲地 +15, 居住舒適 +10, 歷史記憶 +5, 交通效率 -5)',
+          effects: { residential: 10, commercial: 0, mobility: -5, ecological: 15, cultural: 5 },
+          actionText: '生態綠帶段：連續複層大樹林蔭冠層'
         },
         {
           id: 'b',
-          text: '打造連續綠色林蔭與雨水花園 (Ecological +20, Residential +10)',
-          effects: { residential: 10, commercial: 0, mobility: -5, ecological: 20, cultural: 0 },
-          actionText: '生態區打造林蔭與雨水花園'
+          text: '高透水鋪面與雨水花園 (生態棲地 +20, 居住舒適 +5, 交通效率 -5)',
+          effects: { residential: 5, commercial: 0, mobility: -5, ecological: 20, cultural: 0 },
+          actionText: '生態綠帶段：高透水鋪面與雨水花園'
         },
         {
           id: 'c',
-          text: '採用節點硬鋪面與生態綠帶混合 (Ecological +15, Commercial +10)',
-          effects: { residential: 0, commercial: 10, mobility: 5, ecological: 15, cultural: 0 },
-          actionText: '生態區採用節點鋪面與綠帶混合'
+          text: '生態緩衝降溫廊道 (生態棲地 +15, 歷史記憶 +10, 居住舒適 +5)',
+          effects: { residential: 5, commercial: 0, mobility: 0, ecological: 15, cultural: 10 },
+          actionText: '生態綠帶段：生態緩衝降溫廊道'
         }
       ]
     }
