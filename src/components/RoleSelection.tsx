@@ -228,7 +228,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
                 >
                   {/* Miniature illustrated character card */}
                   <div className={`w-11 h-14 rounded-lg border-2 border-[#1f1d1b] ${getBlobBgClass(r.id)} flex items-center justify-center overflow-hidden shrink-0 bg-white shadow-[1px_1px_0px_0px_#1f1d1b]`}>
-                    <img src={`/char_${r.id}.png`} alt={r.name} className="w-full h-full object-contain scale-110" />
+                    <img src={r.id === 'shop_owner' ? '/char_shopowner.png' : `/char_${r.id}.png`} alt={r.name} className="w-full h-full object-contain scale-110" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
@@ -264,7 +264,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onRoleSelect }) =>
                   FULL PROFILE CHARACTER
                 </div>
                 <img 
-                  src={`/char_${viewingRole.id}.png`} 
+                  src={viewingRole.id === 'shop_owner' ? '/char_shopowner.png' : `/char_${viewingRole.id}.png`} 
                   alt={viewingRole.name} 
                   className="h-44 md:h-64 object-contain select-none pointer-events-none drop-shadow-[4px_4px_0px_rgba(0,0,0,0.15)] transform hover:scale-105 transition-transform"
                 />
