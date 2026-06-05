@@ -134,6 +134,7 @@ export default function Home() {
       {currentScreen === 'brief' && (
         <MissionBriefScreen 
           playerRole={playerRole}
+          collectedInsights={collectedInsights}
           onStartNegotiation={handleStartNegotiation}
         />
       )}

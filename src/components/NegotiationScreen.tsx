@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Choice, Round } from '@/data/missionData';
+import { Choice, Round, Effect } from '@/data/missionData';
 import { StakeholderRole, roles } from '@/data/roles';
-import { Sparkles, ChevronRight, CheckCircle, Info } from 'lucide-react';
+import { Sparkles, ChevronRight, CheckCircle, Info, BarChart2 } from 'lucide-react';
 
 interface NegotiationScreenProps {
   playerRole: StakeholderRole;
@@ -21,6 +21,9 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   const [roundIdx, setRoundIdx] = useState(0);
   const [step, setStep] = useState(0); // 0: Intro, 1: Choice Selection, 2: Player proposal, 3: Resident feedback, 4: Commuter/Elderly feedback, 5: Environmentalist feedback, 6: Gov feedback
   const [selectedChoice, setSelectedChoice] = useState<Choice | null>(null);
+
+  // Track choices made locally during negotiation to show live score changes
+  const [roundChoices, setRoundChoices] = useState<Record<number, Choice>>({});
 
   const currentRound = rounds[roundIdx];
   const choiceId = selectedChoice?.id || '';
@@ -57,12 +60,11 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   // Determine who is actively speaking in the round based on current step
   const getActiveSpeakerId = (): string => {
     if (step === 0) {
-      // Intro speaker
       if (roundIdx === 0) return 'resident';
       if (roundIdx === 1) return 'shop_owner';
       return 'environmentalist';
     }
-    if (step === 2) return playerRole.id; // Player proposes
+    if (step === 2) return playerRole.id;
     if (step === 3) return roundIdx === 0 ? 'resident' : roundIdx === 1 ? 'shop_owner' : 'environmentalist';
     if (step === 4) return roundIdx === 0 ? 'commuter' : roundIdx === 1 ? 'elderly' : 'elderly';
     if (step === 5) return 'environmentalist';
@@ -72,10 +74,30 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
 
   const activeSpeakerId = getActiveSpeakerId();
 
-  // Dialog dialogues mapping
+  // Dynamic live score calculator based on choices made in the roundtable
+  const calculateLiveScores = (): Effect => {
+    const live = { residential: 50, commercial: 50, mobility: 50, ecological: 50, cultural: 50 };
+    Object.values(roundChoices).forEach(c => {
+      live.residential += c.effects.residential || 0;
+      live.commercial += c.effects.commercial || 0;
+      live.mobility += c.effects.mobility || 0;
+      live.ecological += c.effects.ecological || 0;
+      live.cultural += c.effects.cultural || 0;
+    });
+    // clamp
+    live.residential = Math.max(0, Math.min(100, live.residential));
+    live.commercial = Math.max(0, Math.min(100, live.commercial));
+    live.mobility = Math.max(0, Math.min(100, live.mobility));
+    live.ecological = Math.max(0, Math.min(100, live.ecological));
+    live.cultural = Math.max(0, Math.min(100, live.cultural));
+    return live;
+  };
+
+  const liveScores = calculateLiveScores();
+
+  // Roundtable dialog text mapping
   const getDialogue = (): { speakerId: string; text: string; buttonText: string } => {
     const isPlayer = activeSpeakerId === playerRole.id;
-    const speakerLabel = isPlayer ? 'player' : activeSpeakerId;
 
     if (roundIdx === 0) {
       switch (step) {
@@ -255,9 +277,9 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
 
   const handleNext = () => {
     if (step === 0) {
-      setStep(1); // Show choices
+      setStep(1); // Show choices selection
     } else if (step >= 2 && step < 6) {
-      setStep(prev => prev + 1); // Step through NPC feedback
+      setStep(prev => prev + 1); // Step through NPC dialogue reactions
     } else if (step === 6) {
       if (roundIdx < 2) {
         setRoundIdx(prev => prev + 1);
@@ -272,6 +294,10 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   const handleChoiceSelect = (choice: Choice) => {
     setSelectedChoice(choice);
     onChoiceMade(choice);
+    setRoundChoices(prev => ({
+      ...prev,
+      [roundIdx]: choice
+    }));
     setStep(2);
   };
 
@@ -300,7 +326,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
   const parsedInsights = collectedInsights.map(insight => {
     const parts = insight.split('的觀點：');
     return {
-      title: parts[0] || '公民觀點',
+      title: parts[0] || '公民觀點卡',
       text: parts[1] || insight
     };
   });
@@ -312,9 +338,9 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-3 border-b-3 border-[#1f1d1b] pb-2.5 shrink-0">
           <span className="px-3 py-1 bg-blob-pink border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 4 : 市民代表圓桌協商會議 】
+            【 PHASE 6 : 市民代表圓桌協商會議 】
           </span>
-          <span className="text-xs font-mono font-bold text-gray-400">協商議題進度：{roundIdx + 1} / 3</span>
+          <span className="text-xs font-mono font-bold text-gray-400">協商議題：{roundIdx + 1} / 3</span>
         </div>
 
         {/* Subtitle / Topic card */}
@@ -328,31 +354,29 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
           </p>
         </div>
 
-        {/* Main Workspace split: Left/Center is roundtable & dialog, Right is collected insight cards deck */}
+        {/* Main Roundtable Workspace */}
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 overflow-hidden mb-2">
           
-          {/* Left Column: Roundtable Visualization + Dialogue box */}
+          {/* Left Column: Roundtable board + Dialogue Box */}
           <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
             
             {/* Roundtable board */}
-            <div className="bg-[#FAF8F5] border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop relative min-h-[160px] flex items-center justify-center shrink-0 mb-4 bg-[radial-gradient(rgba(31,29,27,0.04)_1px,transparent_1px)] bg-[size:15px_15px]">
+            <div className="bg-[#FAF8F5] border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop relative min-h-[170px] flex items-center justify-center shrink-0 mb-4 bg-[radial-gradient(rgba(31,29,27,0.04)_1px,transparent_1px)] bg-[size:15px_15px]">
               
-              {/* Wooden center table */}
-              <div className="w-60 h-28 rounded-full border-4 border-[#1f1d1b] bg-[#e8e5db] shadow-[inset_3px_3px_0px_rgba(0,0,0,0.08)] flex items-center justify-center relative select-none">
+              {/* Center table */}
+              <div className="w-64 h-28 rounded-full border-4 border-[#1f1d1b] bg-[#e8e5db] shadow-[inset:3px_3px_0px_rgba(0,0,0,0.08)] flex items-center justify-center relative select-none">
                 <span className="text-[#1f1d1b] font-serif font-black text-[9px] uppercase tracking-widest opacity-25">
                   臺南市民協商圓桌
                 </span>
-                
-                {/* Visual marker inside table */}
                 <div className="w-12 h-12 rounded-full border-2 border-dashed border-[#1f1d1b]/20 flex items-center justify-center" />
               </div>
 
-              {/* 6 Stakeholder positions around the table */}
+              {/* Avatars surrounding the table */}
               {[
-                { id: 'resident', name: '周邊居民 阿明', style: { left: '10%', top: '15%' } },
-                { id: 'shop_owner', name: '在地店家 莉雅', style: { left: '10%', top: '60%' } },
-                { id: 'commuter', name: '通勤/騎士 小宇', style: { right: '10%', top: '60%' } },
-                { id: 'elderly', name: '高齡代表 陳伯伯', style: { right: '10%', top: '15%' } },
+                { id: 'resident', name: '周邊居民 阿明', style: { left: '8%', top: '15%' } },
+                { id: 'shop_owner', name: '在地店家 莉雅', style: { left: '8%', top: '60%' } },
+                { id: 'commuter', name: '通勤/騎士 小宇', style: { right: '8%', top: '60%' } },
+                { id: 'elderly', name: '高齡代表 陳伯伯', style: { right: '8%', top: '15%' } },
                 { id: 'environmentalist', name: '環保代表 綠野', style: { left: '50%', top: '3%', transform: 'translateX(-50%)' } },
                 { id: 'government', name: '市府代表 林科長', style: { left: '50%', top: '75%', transform: 'translateX(-50%)' } }
               ].map(member => {
@@ -365,15 +389,13 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
                     style={member.style}
                     className="absolute flex flex-col items-center transition-all duration-200 z-10"
                   >
-                    {/* Character avatar frame */}
                     <div className={`w-11 h-11 rounded-full border-2 border-[#1f1d1b] overflow-hidden flex items-center justify-center ${getBlobBgClass(member.id)} shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] ${
                       isActive 
-                        ? 'scale-115 ring-3 ring-[var(--color-brand-coral)] border-[var(--color-brand-coral)] animate-pulse' 
+                        ? 'scale-115 ring-3 ring-[var(--color-brand-coral)] border-[var(--color-brand-coral)] animate-pulse z-20' 
                         : 'opacity-75'
                     }`}>
                       <img src={getRoleAvatar(member.id)} alt={member.id} className="w-full h-full object-cover scale-110" />
                     </div>
-                    {/* Label */}
                     <span className={`mt-1 text-[7.5px] px-1.5 py-0.2 rounded border font-bold ${
                       isActive 
                         ? 'bg-[var(--color-brand-coral)] text-white border-[#1f1d1b]' 
@@ -387,7 +409,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
 
             </div>
 
-            {/* Conversation text box */}
+            {/* Conversation box */}
             <div className="flex-1 bg-white border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop flex flex-col justify-between min-h-[150px] relative">
               {step !== 1 ? (
                 <div className="flex-1 flex flex-col justify-between">
@@ -409,7 +431,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
 
                   <button 
                     onClick={handleNext}
-                    className="btn-flat-action w-full mt-3 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 font-bold shadow-flat-pop"
+                    className="btn-flat-action w-full mt-3 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 font-bold shadow-flat-pop cursor-pointer"
                   >
                     {currentDialogue.buttonText}
                     <ChevronRight size={14} />
@@ -455,38 +477,68 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
 
           </div>
 
-          {/* Right Column: Hand of Collected Insight Cards */}
-          <div className="w-full lg:w-72 bg-gray-50 border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop flex flex-col shrink-0 overflow-y-auto max-h-48 lg:max-h-none text-left">
-            <div className="flex items-center gap-1.5 mb-2 border-b border-gray-200 pb-1.5">
-              <span className="text-xs font-bold text-[#1f1d1b] font-serif">[ 💡 您的公民觀點卡手牌 ]</span>
-            </div>
+          {/* Right Column: Dynamic indicator levels + Collected Evidence Cards */}
+          <div className="w-full lg:w-72 flex flex-col gap-4 shrink-0 overflow-y-auto max-h-48 lg:max-h-none text-left">
             
-            <div className="space-y-2.5">
-              {parsedInsights.map((card, idx) => (
-                <div 
-                  key={idx}
-                  className="bg-white border-2 border-[#1f1d1b] p-2.5 rounded-lg shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden hover:scale-[1.02] transition-transform duration-200"
-                >
-                  {/* Stamp background indicator */}
-                  <div className="absolute top-1 right-2 text-xs font-extrabold opacity-30 select-none pointer-events-none">
-                    💡 CARD
-                  </div>
+            {/* Live indicators block */}
+            <div className="bg-gray-50 border-3 border-[#1f1d1b] p-3 rounded-xl shadow-flat-pop">
+              <span className="text-[9.5px] font-bold text-[#1f1d1b] font-serif block mb-2 flex items-center gap-1">
+                <BarChart2 size={12} className="text-blue-500" />
+                [ 協商即時指標 / LIVE METRICS ]
+              </span>
+              <div className="space-y-1.5">
+                {Object.entries(liveScores).map(([key, val]) => {
+                  let barColor = 'bg-gray-400';
+                  let labelZh = key;
+                  if (key === 'residential') { barColor = 'bg-[#d37b70]'; labelZh = '居住'; }
+                  else if (key === 'commercial') { barColor = 'bg-[#e2a968]'; labelZh = '商業'; }
+                  else if (key === 'mobility') { barColor = 'bg-[#6b8b9b]'; labelZh = '交通'; }
+                  else if (key === 'ecological') { barColor = 'bg-[#5a7a68]'; labelZh = '生態'; }
+                  else if (key === 'cultural') { barColor = 'bg-stone-400'; labelZh = '歷史'; }
 
-                  <span className="px-1.5 py-0.2 bg-blob-blue border border-[#1f1d1b] text-[8px] font-bold rounded">
-                    {card.title}
-                  </span>
-                  
-                  <p className="mt-1 text-[9.5px] leading-relaxed text-gray-600 font-bold font-sans">
-                    "{card.text}"
-                  </p>
-                </div>
-              ))}
-              {parsedInsights.length === 0 && (
-                <div className="text-gray-400 italic text-[10px] p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                  手牌中尚無收集到的觀點卡。
-                </div>
-              )}
+                  return (
+                    <div key={key} className="text-[9px] font-sans">
+                      <div className="flex justify-between items-center font-bold mb-0.5">
+                        <span className="text-gray-700">{labelZh}</span>
+                        <span className="font-mono text-gray-500">{val}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white border border-[#1f1d1b] rounded-sm overflow-hidden">
+                        <div className={`h-full ${barColor}`} style={{ width: `${val}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Collected Insight Cards as Evidence */}
+            <div className="bg-gray-50 border-3 border-[#1f1d1b] p-3 rounded-xl shadow-flat-pop flex-1 overflow-y-auto">
+              <span className="text-[9.5px] font-bold text-[#1f1d1b] font-serif block mb-2 border-b border-gray-200 pb-1">
+                [ 💡 卡包攜入證據 / EVIDENCE DECK ]
+              </span>
+              
+              <div className="space-y-2">
+                {parsedInsights.map((card, idx) => (
+                  <div 
+                    key={idx}
+                    className="bg-white border border-[#1f1d1b] p-2 rounded-lg shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden"
+                  >
+                    <span className="px-1.5 py-0.2 bg-[#deebf7] text-[#4a6b82] text-[7.5px] font-bold rounded border border-[#6b8b9b]">
+                      {card.title}
+                    </span>
+                    <p className="mt-1 text-[9px] leading-relaxed text-gray-600 font-medium font-sans">
+                      "{card.text}"
+                    </p>
+                  </div>
+                ))}
+                {parsedInsights.length === 0 && (
+                  <div className="text-gray-400 italic text-[9.5px] p-4 text-center border border-dashed border-gray-300 rounded-lg">
+                    未收集到觀點卡。
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
         </div>

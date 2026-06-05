@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Effect } from '@/data/missionData';
 import { StakeholderRole, roles } from '@/data/roles';
 import { Sparkles, Check, RefreshCw, BarChart2, CheckCircle } from 'lucide-react';
@@ -11,7 +11,7 @@ interface StrategyRevisionScreenProps {
 }
 
 interface RevisionOption {
-  id: string; // 'a' | 'b' | 'c'
+  id: string; // 'a' | 'b' | 'c' | 'd'
   text: string;
   effects: Effect;
   actionText: string;
@@ -28,11 +28,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
   initialSelections,
   onRevisionComplete
 }) => {
-  // Option mapping from Phase 5 Rounds
-  // Mapping rounds choices to strategy options:
-  // Round 1 (Residential): '1a'->'a', '1b'->'b', '1c'->'c'
-  // Round 2 (Commercial): '2a'->'a', '2b'->'b', '2c'->'c'
-  // Round 3 (Ecological): '3a'->'a', '3b'->'b', '3c'->'c'
+  // Option mapping from Phase 4 choices
   const getPreselectedId = (segId: number): string => {
     const rawVal = initialSelections[segId] || '';
     if (rawVal.endsWith('a')) return 'a';
@@ -45,7 +41,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
     0: getPreselectedId(0),
     1: getPreselectedId(1),
     2: 'a', // Default Station node
-    3: 'a', // Default Crossing
+    3: 'b', // Default Road Crossing: protected ground crossing
     4: getPreselectedId(4)
   });
 
@@ -56,21 +52,21 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       options: [
         {
           id: 'a',
-          text: '地面慢速自行車道 (居住舒適 +5, 交通效率 +5, 生態棲地 +5)',
-          effects: { residential: 5, commercial: 0, mobility: 5, ecological: 5, cultural: 0 },
-          actionText: '住宅段：地面慢速自行車道'
+          text: '平面慢行 (居住舒適 +10, 交通效率 -5, 生態棲地 +5)',
+          effects: { residential: 10, commercial: 0, mobility: -5, ecological: 5, cultural: 0 },
+          actionText: '住宅段：平面慢行'
         },
         {
           id: 'b',
-          text: '局部高架設綠化隱私遮簾 (交通效率 +15, 居住舒適 -5, 生態棲地 +5, 歷史記憶 -5)',
-          effects: { residential: -5, commercial: 0, mobility: 15, ecological: 5, cultural: -5 },
-          actionText: '住宅段：局部高架設綠化隱私遮簾'
+          text: '局部高架 + 綠牆遮蔽 (交通效率 +15, 居住舒適 +5, 生態棲地 +5, 歷史記憶 -5)',
+          effects: { residential: 5, commercial: 0, mobility: 15, ecological: 5, cultural: -5 },
+          actionText: '住宅段：局部高架 + 綠牆遮蔽'
         },
         {
           id: 'c',
-          text: '社區安寧綠色緩衝帶 (居住舒適 +15, 生態棲地 +10, 歷史記憶 +5, 交通效率 -5)',
+          text: '安寧生活緩衝帶 (居住舒適 +15, 生態棲地 +10, 歷史記憶 +5, 交通效率 -5)',
           effects: { residential: 15, commercial: 0, mobility: -5, ecological: 10, cultural: 5 },
-          actionText: '住宅段：社區安寧綠色緩衝帶'
+          actionText: '住宅段：安寧生活緩衝帶'
         }
       ]
     },
@@ -80,21 +76,27 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       options: [
         {
           id: 'a',
-          text: '地面慢速人車共享街區 (商業活力 +15, 歷史記憶 +5, 交通效率 -5)',
+          text: '地面共享街道 (商業活力 +15, 歷史記憶 +5, 交通效率 -5)',
           effects: { residential: 0, commercial: 15, mobility: -5, ecological: 0, cultural: 5 },
-          actionText: '商業段：地面慢速人車共享街區'
+          actionText: '商業段：地面共享街道'
         },
         {
           id: 'b',
-          text: '自行車停靠點與遮陰休閒廣場 (商業活力 +10, 交通效率 +5, 生態棲地 +5, 歷史記憶 +5)',
-          effects: { residential: 0, commercial: 10, mobility: 5, ecological: 5, cultural: 5 },
-          actionText: '商業段：自行車停靠點與遮陰休閒廣場'
+          text: '自行車停靠點 (商業活力 +10, 交通效率 +5, 歷史記憶 +5)',
+          effects: { residential: 0, commercial: 10, mobility: 5, ecological: 0, cultural: 5 },
+          actionText: '商業段：自行車停靠點'
         },
         {
           id: 'c',
-          text: '店家物流裝卸與臨停區 (商業活力 +10, 交通效率 +10, 居住舒適 -5, 生態棲地 -5)',
-          effects: { residential: -5, commercial: 10, mobility: 10, ecological: -5, cultural: 0 },
-          actionText: '商業段：店家物流裝卸與臨停區'
+          text: '遮蔭廣場 (商業活力 +10, 生態棲地 +10, 居住舒適 +5)',
+          effects: { residential: 5, commercial: 10, mobility: 0, ecological: 10, cultural: 0 },
+          actionText: '商業段：遮蔭廣場'
+        },
+        {
+          id: 'd',
+          text: '外送臨停區 (商業活力 +10, 交通效率 +10, 居住舒適 -5)',
+          effects: { residential: -5, commercial: 10, mobility: 10, ecological: 0, cultural: 0 },
+          actionText: '商業段：外送臨停區'
         }
       ]
     },
@@ -104,21 +106,21 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       options: [
         {
           id: 'a',
-          text: 'YouBike與大眾運輸轉乘樞紐 (交通效率 +15, 商業活力 +5, 生態棲地 -5)',
+          text: 'YouBike + transit hub (交通效率 +15, 商業活力 +5, 生態棲地 -5)',
           effects: { residential: 0, commercial: 5, mobility: 15, ecological: -5, cultural: 0 },
-          actionText: '車站節點：YouBike與大眾運輸轉乘樞紐'
+          actionText: '車站節點：YouBike + transit hub'
         },
         {
           id: 'b',
-          text: '行人優先漫步歷史廣場 (歷史記憶 +15, 生態棲地 +10, 居住舒適 +5, 商業活力 +5, 交通效率 -5)',
-          effects: { residential: 5, commercial: 5, mobility: -5, ecological: 10, cultural: 15 },
-          actionText: '車站節點：行人優先漫步歷史廣場'
+          text: 'pedestrian priority plaza (歷史記憶 +15, 生態棲地 +10, 居住舒適 +5)',
+          effects: { residential: 5, commercial: 0, mobility: -5, ecological: 10, cultural: 15 },
+          actionText: '車站節點：pedestrian priority plaza'
         },
         {
           id: 'c',
-          text: '清晰指引與慢速微行動特區 (交通效率 +10, 商業活力 +5, 歷史記憶 +5)',
+          text: 'slow mobility zone (交通效率 +10, 商業活力 +5, 歷史記憶 +5)',
           effects: { residential: 0, commercial: 5, mobility: 10, ecological: 0, cultural: 5 },
-          actionText: '車站節點：清晰指引與慢速微行動特區'
+          actionText: '車站節點：slow mobility zone'
         }
       ]
     },
@@ -128,21 +130,21 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       options: [
         {
           id: 'a',
-          text: '局部自行車立體陸橋 (交通效率 +15, 生態棲地 -10, 居住舒適 -5, 歷史記憶 -5)',
-          effects: { residential: -5, commercial: 0, mobility: 15, ecological: -10, cultural: -5 },
-          actionText: '主要路口：局部自行車立體陸橋'
+          text: '局部高架穿越 (交通效率 +15, 生態棲地 -10, 居住舒適 -5)',
+          effects: { residential: -5, commercial: 0, mobility: 15, ecological: -10, cultural: 0 },
+          actionText: '主要路口：局部高架穿越'
         },
         {
           id: 'b',
-          text: '地面保護型自行車道十字路口 (交通效率 +10, 居住舒適 +5)',
-          effects: { residential: 5, commercial: 0, mobility: 10, ecological: 0, cultural: 0 },
-          actionText: '主要路口：地面保護型自行車道十字路口'
+          text: '受保護平面穿越 (交通效率 +10, 居住舒適 +10)',
+          effects: { residential: 10, commercial: 0, mobility: 10, ecological: 0, cultural: 0 },
+          actionText: '主要路口：受保護平面穿越'
         },
         {
           id: 'c',
-          text: '人車分流專用號誌系統 (居住舒適 +10, 交通效率 +5, 生態棲地 +5)',
+          text: '人車分流專用號誌 (居住舒適 +10, 交通效率 +5, 生態棲地 +5)',
           effects: { residential: 10, commercial: 0, mobility: 5, ecological: 5, cultural: 0 },
-          actionText: '主要路口：人車分流專用號誌系統'
+          actionText: '主要路口：人車分流專用號誌'
         }
       ]
     },
@@ -152,21 +154,27 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       options: [
         {
           id: 'a',
-          text: '連續複層大樹林蔭冠層 (生態棲地 +15, 居住舒適 +10, 歷史記憶 +5, 交通效率 -5)',
-          effects: { residential: 10, commercial: 0, mobility: -5, ecological: 15, cultural: 5 },
-          actionText: '生態綠帶段：連續複層大樹林蔭冠層'
+          text: '連續樹冠 (生態棲地 +15, 居住舒適 +10, 交通效率 -5)',
+          effects: { residential: 10, commercial: 0, mobility: -5, ecological: 15, cultural: 0 },
+          actionText: '生態綠帶段：連續樹冠'
         },
         {
           id: 'b',
-          text: '高透水鋪面與雨水花園 (生態棲地 +20, 居住舒適 +5, 交通效率 -5)',
+          text: '雨水花園 (生態棲地 +20, 居住舒適 +5, 交通效率 -5)',
           effects: { residential: 5, commercial: 0, mobility: -5, ecological: 20, cultural: 0 },
-          actionText: '生態綠帶段：高透水鋪面與雨水花園'
+          actionText: '生態綠帶段：雨水花園'
         },
         {
           id: 'c',
-          text: '生態緩衝降溫廊道 (生態棲地 +15, 歷史記憶 +10, 居住舒適 +5)',
+          text: '透水鋪面 (生態棲地 +10, 居住舒適 +5, 交通效率 +5)',
+          effects: { residential: 5, commercial: 0, mobility: 5, ecological: 10, cultural: 0 },
+          actionText: '生態綠帶段：透水鋪面'
+        },
+        {
+          id: 'd',
+          text: '生態降溫廊道 (生態棲地 +15, 歷史記憶 +10, 居住舒適 +5)',
           effects: { residential: 5, commercial: 0, mobility: 0, ecological: 15, cultural: 10 },
-          actionText: '生態綠帶段：生態緩衝降溫廊道'
+          actionText: '生態綠帶段：生態降溫廊道'
         }
       ]
     }
@@ -221,9 +229,9 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       case 'government': scoreVal = avgScore; break;
     }
 
-    if (scoreVal >= 60) return { emoji: '😊', text: '非常滿意', color: 'text-[#3e5f4c] bg-blob-green' };
-    if (scoreVal >= 45) return { emoji: '😐', text: '可以接受', color: 'text-[#b37a3c] bg-blob-yellow' };
-    return { emoji: '😞', text: '有些疑慮', color: 'text-[#c26257] bg-blob-pink' };
+    if (scoreVal >= 60) return { emoji: '😊', text: '非常滿意', color: 'text-[#3e5f4c] bg-[#e2f0d9]' };
+    if (scoreVal >= 45) return { emoji: '😐', text: '可以接受', color: 'text-[#b37a3c] bg-[#fff2cc]' };
+    return { emoji: '😞', text: '有些疑慮', color: 'text-[#c26257] bg-[#fce4d6]' };
   };
 
   const handleOptionSelect = (segId: number, optionId: string) => {
@@ -238,7 +246,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
       0: getPreselectedId(0),
       1: getPreselectedId(1),
       2: 'a',
-      3: 'a',
+      3: 'b',
       4: getPreselectedId(4)
     });
   };
@@ -284,19 +292,19 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
         {/* Progress Header */}
         <div className="flex justify-between items-center mb-4 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
           <span className="px-3 py-1 bg-blob-green border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-            【 PHASE 5 : 空間策略修訂工作台 】
+            【 PHASE 7 : 空間策略修訂工作台 】
           </span>
           <div className="flex gap-2">
             <button 
               onClick={handleReset}
-              className="flex items-center gap-1 bg-white border border-[#1f1d1b] px-2 py-0.5 rounded text-[10px] font-bold text-gray-500 hover:bg-gray-50"
+              className="flex items-center gap-1 bg-white border border-[#1f1d1b] px-2 py-0.5 rounded text-[10px] font-bold text-gray-500 hover:bg-gray-50 cursor-pointer"
             >
               <RefreshCw size={10} /> 重置協商決策
             </button>
           </div>
         </div>
 
-        {/* 2.5D Digital Twin Map View at the top of the Revision screen */}
+        {/* 2.5D Digital Twin Map View */}
         <div className="h-52 md:h-64 w-full shrink-0 mb-4">
           <Greenway25DMap 
             playerRole={playerRole}
@@ -381,21 +389,21 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
                   <div key={seg.id} className="border-2 border-[#1f1d1b] rounded-xl p-3.5 bg-gray-50/50 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.15)] flex flex-col">
                     <h4 className="text-xs font-extrabold text-[#1f1d1b] font-serif mb-2">{seg.name}</h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {seg.options.map((opt) => {
                         const isSelected = activeId === opt.id;
                         return (
                           <button
                             key={opt.id}
                             onClick={() => handleOptionSelect(seg.id, opt.id)}
-                            className={`p-2.5 rounded-lg border-2 text-left text-[10.5px] font-bold leading-normal transition-all outline-none flex flex-col justify-between min-h-[64px] ${
+                            className={`p-2.5 rounded-lg border-2 text-left text-[10.5px] font-bold leading-normal transition-all outline-none flex flex-col justify-between min-h-[64px] cursor-pointer ${
                               isSelected 
                                 ? 'bg-white border-[var(--color-brand-green)] shadow-[2px_2px_0px_0px_rgba(142,166,61,0.35)] ring-1 ring-[var(--color-brand-green)]' 
                                 : 'bg-white border-gray-300 hover:border-[#1f1d1b] text-gray-600 shadow-[1px_1px_0px_0px_rgba(0,0,0,0.05)]'
                             }`}
                           >
                             <span className="text-[#1f1d1b] mb-1">{opt.text.split(' (')[0]}</span>
-                            <span className="text-[8.5px] text-gray-400 block border-t border-dashed border-gray-200 pt-0.5 mt-0.5">
+                            <span className="text-[8.5px] text-gray-400 block border-t border-dashed border-gray-200 pt-0.5 mt-0.5 font-mono">
                               {opt.text.includes('(') ? '(' + opt.text.split('(')[1] : ''}
                             </span>
                           </button>
@@ -420,7 +428,7 @@ export const StrategyRevisionScreen: React.FC<StrategyRevisionScreenProps> = ({
           <div className="text-[10px] text-gray-400 font-mono font-bold">[ PLANNING WORKDESK READY ]</div>
           <button
             onClick={handleSubmit}
-            className="btn-flat-action px-8 py-3 bg-[var(--color-brand-coral)] hover:bg-[#c06a5f] text-white rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-flat-pop font-bold"
+            className="btn-flat-action px-8 py-3 bg-[var(--color-brand-coral)] hover:bg-[#c06a5f] text-white rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-flat-pop font-bold cursor-pointer"
           >
             <CheckCircle size={14} /> 送交市民審查，生成最終規劃成果 ➔
           </button>

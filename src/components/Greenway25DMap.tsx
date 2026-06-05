@@ -6,7 +6,7 @@ interface Greenway25DMapProps {
   avatarPosition?: number; // 0 to 100
   playerRole?: StakeholderRole;
   selections?: Record<number, string>; // selected options (e.g. {0: 'a', 1: 'b'})
-  collectedInsights?: Record<number, boolean>;
+  collectedInsights?: Record<number | string, boolean>;
   interactive?: boolean;
   onSegmentClick?: (id: number) => void;
 }
@@ -21,7 +21,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   onSegmentClick
 }) => {
   // SVG Canvas configuration
-  // We use a 1000x520 canvas to allow proper vertical height for isometric drawings.
   const canvasWidth = 1000;
   const canvasHeight = 520;
 
@@ -46,8 +45,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     const y = yOffset + wiggle;
 
     // Perpendicular mapping vectors:
-    // positive yOffset (front) moves screen left-down
-    // negative yOffset (back) moves screen right-up
     return {
       x: baseX - y * 0.65,
       y: baseY + y * 0.38 - z
@@ -63,6 +60,16 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     { id: 4, name: '生態綠帶段', x: 900, icon: '🌿', detailZh: '大樹降溫與雨水花園' }
   ];
 
+  // 3. NPCs List for drawing on the map
+  const npcsList = [
+    { id: 'resident', name: '阿明', pct: 18, avatar: '/avatar_resident.png', color: '#fbc4c6' },
+    { id: 'shop_owner', name: '莉雅', pct: 38, avatar: '/avatar_shopowner.png', color: '#faf0d8' },
+    { id: 'commuter', name: '小宇', pct: 56, avatar: '/avatar_commuter.png', color: '#c7dce7' },
+    { id: 'government', name: '林科長', pct: 74, avatar: '/avatar_government.png', color: '#e2e8f0' },
+    { id: 'elderly', name: '陳伯伯', pct: 84, avatar: '/avatar_elderly.png', color: '#ffe4e6' },
+    { id: 'environmentalist', name: '綠野老師', pct: 92, avatar: '/avatar_environmentalist.png', color: '#acd0a2' }
+  ];
+
   // Helper to interpolate coordinates along the path for the player avatar
   const getCoordinatesAtPct = (pct: number) => {
     // Avatar walks along the pedestrian path (yOffset = 25)
@@ -70,7 +77,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   };
 
   const avatarCoords = avatarPosition !== undefined ? getCoordinatesAtPct(avatarPosition) : null;
-  // Bouncing walk cycle animation using math
   const avatarBobZ = avatarPosition !== undefined ? Math.abs(Math.sin(avatarPosition * 0.5)) * 4.5 : 0;
 
   // --- SUB-COMPONENTS FOR DRAWING 3D SHAPES ---
@@ -150,7 +156,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     const pFLT = getIsoPoint(x - w / 2, y + d / 2, h);
     const pFRT = getIsoPoint(x + w / 2, y + d / 2, h);
 
-    // Ridge points running along X-axis at center of depth
+    // Ridge points
     const roofH = d * 0.45;
     const pRidgeL = getIsoPoint(x - w / 2, y, h + roofH);
     const pRidgeR = getIsoPoint(x + w / 2, y, h + roofH);
@@ -253,7 +259,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     );
   };
 
-  // Isometric Windows & Doors helpers
   const drawFrontDoor = (x: number, y: number, z: number, w: number, h: number, fill: string = '#8a6245') => {
     const pFL = getIsoPoint(x - w / 2, y, z);
     const pFR = getIsoPoint(x + w / 2, y, z);
@@ -284,7 +289,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     );
   };
 
-  // Helper to generate a winding ribbon path string at a specific yOffset
   const getWindingPathD = (yOffset: number) => {
     let d = '';
     for (let x = 30; x <= 970; x += 15) {
@@ -294,7 +298,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     return d;
   };
 
-  // Generate elevated bridge deck path
   const getElevatedBridgeD = (xStart: number, xEnd: number, yOffset: number, z: number) => {
     let d = '';
     for (let x = xStart; x <= xEnd; x += 15) {
@@ -304,22 +307,18 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     return d;
   };
 
-  // Define Ground Slab coordinates
   const pSlabBackLeft = getIsoPoint(30, -110, 0);
   const pSlabBackRight = getIsoPoint(970, -110, 0);
   const pSlabFrontRight = getIsoPoint(970, 110, 0);
   const pSlabFrontLeft = getIsoPoint(30, 110, 0);
 
-  // Depth wall base coordinates (for the thick 3D floating block)
   const slabDepth = 35;
   const pSlabFrontRightB = getIsoPoint(970, 110, -slabDepth);
   const pSlabFrontLeftB = getIsoPoint(30, 110, -slabDepth);
   const pSlabBackLeftB = getIsoPoint(30, -110, -slabDepth);
 
-  // Generate grid line elements for architectural drawing overlay
   const renderGridLines = () => {
     const lines = [];
-    // Transverse grid lines
     for (let x = 100; x <= 900; x += 50) {
       const p1 = getIsoPoint(x, -110, 0);
       const p2 = getIsoPoint(x, 110, 0);
@@ -336,7 +335,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         />
       );
     }
-    // Longitudinal grid lines
     for (let y = -90; y <= 90; y += 30) {
       const p1 = getIsoPoint(30, y, 0);
       const p2 = getIsoPoint(970, y, 0);
@@ -364,7 +362,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
       {/* SVG Canvas */}
       <svg viewBox={`0 0 ${canvasWidth} ${canvasHeight}`} className="w-full h-full relative z-10">
         <defs>
-          {/* Gradients */}
           <linearGradient id="metal-bridge" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#e57a73" />
             <stop offset="100%" stopColor="#c55a53" />
@@ -373,12 +370,12 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
             <stop offset="0%" stopColor="#add1e6" />
             <stop offset="100%" stopColor="#87b8d4" />
           </linearGradient>
+          <clipPath id="npc-avatar-clip-circle">
+            <circle cx="10" cy="10" r="9.5" />
+          </clipPath>
         </defs>
 
-        {/* ========================================================
-            1. 3D ISOMETRIC GROUND SLAB (FLOATING ISLAND BASE)
-            ======================================================== */}
-        {/* Left Side depth face */}
+        {/* 1. 3D ISOMETRIC GROUND SLAB (FLOATING ISLAND BASE) */}
         <polygon
           points={`${pSlabBackLeft.x},${pSlabBackLeft.y} ${pSlabFrontLeft.x},${pSlabFrontLeft.y} ${pSlabFrontLeftB.x},${pSlabFrontLeftB.y} ${pSlabBackLeftB.x},${pSlabBackLeftB.y}`}
           fill="#c3bead"
@@ -386,7 +383,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
-        {/* Front Side depth face */}
         <polygon
           points={`${pSlabFrontLeft.x},${pSlabFrontLeft.y} ${pSlabFrontRight.x},${pSlabFrontRight.y} ${pSlabFrontRightB.x},${pSlabFrontRightB.y} ${pSlabFrontLeftB.x},${pSlabFrontLeftB.y}`}
           fill="#a59f8c"
@@ -394,7 +390,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
-        {/* Ground Top Slab Plane */}
         <polygon
           points={`${pSlabBackLeft.x},${pSlabBackLeft.y} ${pSlabBackRight.x},${pSlabBackRight.y} ${pSlabFrontRight.x},${pSlabFrontRight.y} ${pSlabFrontLeft.x},${pSlabFrontLeft.y}`}
           fill="#eae6d8"
@@ -403,13 +398,9 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinejoin="round"
         />
 
-        {/* Faint planning coordinate grid on the board surface */}
         {renderGridLines()}
 
-        {/* ========================================================
-            2. CONTINUOUS GREENWAY ROADBED/PATHS (COGNITIVE CORE SPINE)
-            ======================================================== */}
-        {/* Planted Buffer zone (continuous green ribbon on the back edge) */}
+        {/* 2. CONTINUOUS GREENWAY ROADBED/PATHS */}
         <path
           d={getWindingPathD(-28)}
           stroke="#acd0a2"
@@ -418,7 +409,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Pedestrian Walkway path (closer to front edge) */}
         <path
           d={getWindingPathD(25)}
           stroke="#ebdcb9"
@@ -437,7 +427,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinejoin="round"
           opacity="0.7"
         />
-        {/* Ground level Bicycle path (middle) */}
         <path
           d={getWindingPathD(-2)}
           stroke="#c7dce7"
@@ -446,7 +435,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Dashed white center line for ground bike lane */}
         <path
           d={getWindingPathD(-2)}
           stroke="#ffffff"
@@ -459,22 +447,17 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
 
         {/* ========================================================
             3. DYNAMIC POLICY DECORS AND STRATEGY VISUALIZATIONS
-               (Sorted from back-to-front / right-to-left for correct depth overlapping)
             ======================================================== */}
 
         {/* ---------------- ECOLOGICAL SEGMENT (X: 900) ---------------- */}
-        {/* Base canopy trees (always present) */}
         <IsoTree x={860} y={-70} size={20} color1="#3e5f4c" color2="#2d4838" />
         <IsoTree x={930} y={-60} size={22} color1="#5a7a68" color2="#3e5f4c" />
         <IsoTree x={900} y={65} size={18} color1="#8ea63d" color2="#748c2b" />
 
-        {/* Strategy Overlays for Ecology segment */}
         {selections[4] === 'a' ? (
-          /* 連續複層大樹林蔭冠層 - Extra dense trees shading the path */
           <g>
             <IsoTree x={875} y={-45} size={21} color1="#283e31" color2="#1b2a21" />
             <IsoTree x={915} y={-35} size={23} color1="#334f3f" color2="#24382c" />
-            {/* Shading shadow cast onto pedestrian walkway */}
             <path
               d={getElevatedBridgeD(850, 940, 20, 0)}
               stroke="rgba(31,29,27,0.14)"
@@ -484,9 +467,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
             />
           </g>
         ) : selections[4] === 'b' ? (
-          /* 高透水鋪面與雨水花園 - A beautiful pond and garden beside the path */
           <g>
-            {/* Water Pond */}
             <polygon
               points={`
                 ${getIsoPoint(860, -35).x},${getIsoPoint(860, -35).y}
@@ -499,16 +480,11 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeWidth="1.2"
               strokeLinejoin="round"
             />
-            {/* Rocks around pond */}
             <circle cx={getIsoPoint(865, -34).x} cy={getIsoPoint(865, -34).y} r="3" fill="#9ca3af" stroke="#1f1d1b" strokeWidth="1" />
             <circle cx={getIsoPoint(932, -43).x} cy={getIsoPoint(932, -43).y} r="4.5" fill="#78716c" stroke="#1f1d1b" strokeWidth="1" />
             <circle cx={getIsoPoint(882, -12).x} cy={getIsoPoint(882, -12).y} r="2.5" fill="#9ca3af" stroke="#1f1d1b" strokeWidth="1" />
-            {/* Small green plant sprouts */}
-            <line x1={getIsoPoint(938, -25).x} y1={getIsoPoint(938, -25).y} x2={getIsoPoint(938, -25).x - 2} y2={getIsoPoint(938, -25).y - 6} stroke="#3e5f4c" strokeWidth="1.5" />
-            <line x1={getIsoPoint(938, -25).x} y1={getIsoPoint(938, -25).y} x2={getIsoPoint(938, -25).x + 2} y2={getIsoPoint(938, -25).y - 5} stroke="#3e5f4c" strokeWidth="1.5" />
           </g>
         ) : selections[4] === 'c' ? (
-          /* 生態緩衝降溫廊道 - Light blue dashed dynamic wind lines */
           <g>
             <path
               d="M 850,210 Q 890,170 940,195"
@@ -526,13 +502,10 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeDasharray="4,4"
               opacity="0.85"
             />
-            <text x={getIsoPoint(890, -40).x} y={getIsoPoint(890, -40).y} fontSize="7" fontWeight="bold" fill="#4a7b9d" fontFamily="sans-serif">❄️ 降溫風道</text>
           </g>
         ) : null}
 
-
         {/* ---------------- MAJOR ROAD CROSSING (X: 780) ---------------- */}
-        {/* Crossing Asphalt Road cutting through the corridor */}
         <polygon
           points={`
             ${getIsoPoint(755, -110).x},${getIsoPoint(755, -110).y}
@@ -546,24 +519,17 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinejoin="round"
         />
 
-        {/* White Zebra Stripes */}
         <line x1={getIsoPoint(762, -15).x} y1={getIsoPoint(762, -15).y} x2={getIsoPoint(792, -32).x} y2={getIsoPoint(792, -32).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
         <line x1={getIsoPoint(767, 10).x} y1={getIsoPoint(767, 10).y} x2={getIsoPoint(797, -7).x} y2={getIsoPoint(797, -7).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
         <line x1={getIsoPoint(772, 35).x} y1={getIsoPoint(772, 35).y} x2={getIsoPoint(802, 18).x} y2={getIsoPoint(802, 18).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
 
-        {/* Yellow cross markings for traffic */}
         <line x1={getIsoPoint(758, -75).x} y1={getIsoPoint(758, -75).y} x2={getIsoPoint(798, -95).x} y2={getIsoPoint(798, -95).y} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3,3" />
         <line x1={getIsoPoint(758, 75).x} y1={getIsoPoint(758, 75).y} x2={getIsoPoint(798, 55).x} y2={getIsoPoint(798, 55).y} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3,3" />
 
-        {/* Strategy Overlays for Road Crossing */}
         {selections[3] === 'a' ? (
-          /* 局部自行車立體陸橋 - Elevated Flyover bridge crossing over the road */
           <g>
-            {/* Columns supporting bridge */}
             <line x1={getIsoPoint(720, -2, 0).x} y1={getIsoPoint(720, -2, 0).y} x2={getIsoPoint(720, -2, 45).x} y2={getIsoPoint(720, -2, 45).y} stroke="#1f1d1b" strokeWidth="3.5" />
             <line x1={getIsoPoint(835, -2, 0).x} y1={getIsoPoint(835, -2, 0).y} x2={getIsoPoint(835, -2, 45).x} y2={getIsoPoint(835, -2, 45).y} stroke="#1f1d1b" strokeWidth="3.5" />
-
-            {/* Cast Shadow of the Bridge on ground */}
             <path
               d={getElevatedBridgeD(695, 860, 15, 0)}
               stroke="rgba(31,29,27,0.18)"
@@ -571,8 +537,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               fill="none"
               strokeLinecap="round"
             />
-
-            {/* 3D Elevated Arch structure */}
             <path
               d={getElevatedBridgeD(695, 860, -2, 45)}
               stroke="#1f1d1b"
@@ -587,19 +551,14 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               fill="none"
               strokeLinecap="round"
             />
-            {/* Steel arch truss lines */}
             <path
               d={`M ${getIsoPoint(720, -2, 45).x} ${getIsoPoint(720, -2, 45).y} Q ${getIsoPoint(780, -2, 75).x} ${getIsoPoint(780, -2, 75).y} ${getIsoPoint(835, -2, 45).x} ${getIsoPoint(835, -2, 45).y}`}
               fill="none"
               stroke="#1f1d1b"
               strokeWidth="2"
             />
-            <line x1={getIsoPoint(750, -2, 45).x} y1={getIsoPoint(750, -2, 45).y} x2={getIsoPoint(750, -2, 58).x} y2={getIsoPoint(750, -2, 58).y} stroke="#1f1d1b" strokeWidth="1" />
-            <line x1={getIsoPoint(780, -2, 45).x} y1={getIsoPoint(780, -2, 45).y} x2={getIsoPoint(780, -2, 65).x} y2={getIsoPoint(780, -2, 65).y} stroke="#1f1d1b" strokeWidth="1" />
-            <line x1={getIsoPoint(810, -2, 45).x} y1={getIsoPoint(810, -2, 45).y} x2={getIsoPoint(810, -2, 58).x} y2={getIsoPoint(810, -2, 58).y} stroke="#1f1d1b" strokeWidth="1" />
           </g>
         ) : selections[3] === 'b' ? (
-          /* 地面保護型自行車道十字路口 - Bright Green painted cycle crossing lanes */
           <g>
             <polygon
               points={`
@@ -613,31 +572,17 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeWidth="1"
               opacity="0.55"
             />
-            {/* White warning squares */}
-            <circle cx={getIsoPoint(760, 8).x} cy={getIsoPoint(760, 8).y} r="1.5" fill="#ffffff" />
-            <circle cx={770} cy={getIsoPoint(775, 5).y} r="1.5" fill="#ffffff" />
-            <circle cx={790} cy={getIsoPoint(790, -5).y} r="1.5" fill="#ffffff" />
           </g>
         ) : selections[3] === 'c' ? (
-          /* 人車分流專用號誌系統 - Traffic light poles */
           <g>
-            {/* Light pole right-down */}
             <line x1={getIsoPoint(750, 40, 0).x} y1={getIsoPoint(750, 40, 0).y} x2={getIsoPoint(750, 40, 35).x} y2={getIsoPoint(750, 40, 35).y} stroke="#374151" strokeWidth="2" />
             <rect x={getIsoPoint(750, 40, 35).x - 3} y={getIsoPoint(750, 40, 35).y - 8} width="6" height="10" rx="1" fill="#1f1d1b" stroke="#ffffff" strokeWidth="0.5" />
             <circle cx={getIsoPoint(750, 40, 35).x} cy={getIsoPoint(750, 40, 35).y - 5} r="1.8" fill="#ef4444" />
             <circle cx={getIsoPoint(750, 40, 35).x} cy={getIsoPoint(750, 40, 35).y - 1} r="1.8" fill="#10b981" />
-
-            {/* Light pole left-up */}
-            <line x1={getIsoPoint(805, -40, 0).x} y1={getIsoPoint(805, -40, 0).y} x2={getIsoPoint(805, -40, 35).x} y2={getIsoPoint(805, -40, 35).y} stroke="#374151" strokeWidth="2" />
-            <rect x={getIsoPoint(805, -40, 35).x - 3} y={getIsoPoint(805, -40, 35).y - 8} width="6" height="10" rx="1" fill="#1f1d1b" stroke="#ffffff" strokeWidth="0.5" />
-            <circle cx={getIsoPoint(805, -40, 35).x} cy={getIsoPoint(805, -40, 35).y - 5} r="1.8" fill="#10b981" />
-            <circle cx={getIsoPoint(805, -40, 35).x} cy={getIsoPoint(805, -40, 35).y - 1} r="1.8" fill="#ef4444" />
           </g>
         ) : null}
 
-
         {/* ---------------- STATION NODE (X: 620) ---------------- */}
-        {/* Tainan Station Terminal Building (Back area) */}
         <IsoBox
           x={620}
           y={-75}
@@ -648,7 +593,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillLeft="#b2c9db"
           fillFront="#c7dbe8"
         />
-        {/* Grand Station Entrance Arch */}
         <polygon
           points={`
             ${getIsoPoint(600, -52.5, 0).x},${getIsoPoint(600, -52.5, 0).y}
@@ -660,7 +604,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           stroke="#1f1d1b"
           strokeWidth="1.5"
         />
-        {/* Clock Tower block */}
         <IsoBox
           x={580}
           y={-75}
@@ -671,7 +614,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillLeft="#769bb7"
           fillFront="#8cb1cc"
         />
-        {/* Clock Face Details */}
         <circle
           cx={getIsoPoint(580, -64, 82).x}
           cy={getIsoPoint(580, -64, 82).y}
@@ -680,41 +622,14 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           stroke="#1f1d1b"
           strokeWidth="1.2"
         />
-        <line
-          x1={getIsoPoint(580, -64, 82).x}
-          y1={getIsoPoint(580, -64, 82).y}
-          x2={getIsoPoint(580, -64, 82).x}
-          y2={getIsoPoint(580, -64, 82).y - 2.5}
-          stroke="#1f1d1b"
-          strokeWidth="1"
-        />
-        <line
-          x1={getIsoPoint(580, -64, 82).x}
-          y1={getIsoPoint(580, -64, 82).y}
-          x2={getIsoPoint(580, -64, 82).x + 2}
-          y2={getIsoPoint(580, -64, 82).y}
-          stroke="#1f1d1b"
-          strokeWidth="1"
-        />
 
-        {/* Strategy Overlays for Station Node */}
         {selections[2] === 'a' ? (
-          /* YouBike與大眾運輸轉乘樞紐 - Yellow docks + parked bikes + bus stop */
           <g>
-            {/* Bus Shelter */}
             <IsoBox x={665} y={35} w={30} d={12} h={25} fillTop="#ef4444" fillLeft="#991b1b" fillFront="#dc2626" />
-            <rect x={getIsoPoint(665, 41, 5).x - 6} y={getIsoPoint(665, 41, 5).y - 15} width="12" height="12" fill="#ffffff" opacity="0.6" />
-            {/* YouBike Dock line */}
             <line x1={getIsoPoint(600, 40, 0).x} y1={getIsoPoint(600, 40, 0).y} x2={getIsoPoint(630, 28, 0).x} y2={getIsoPoint(630, 28, 0).y} stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
-            {/* YouBike bikes */}
-            <circle cx={getIsoPoint(605, 38, 4).x} cy={getIsoPoint(605, 38, 4).y} r="2" fill="#ef4444" stroke="#1f1d1b" strokeWidth="1" />
-            <circle cx={getIsoPoint(615, 34, 4).x} cy={getIsoPoint(615, 34, 4).y} r="2" fill="#ef4444" stroke="#1f1d1b" strokeWidth="1" />
-            <circle cx={getIsoPoint(625, 30, 4).x} cy={getIsoPoint(625, 30, 4).y} r="2" fill="#ef4444" stroke="#1f1d1b" strokeWidth="1" />
           </g>
         ) : selections[2] === 'b' ? (
-          /* 行人優先漫步歷史廣場 - Memorial circular rail track & public fountain */
           <g>
-            {/* Circular plaza base */}
             <ellipse
               cx={getIsoPoint(640, 25, 0).x}
               cy={getIsoPoint(640, 25, 0).y}
@@ -724,7 +639,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               stroke="#1f1d1b"
               strokeWidth="1.2"
             />
-            {/* Water fountain */}
             <ellipse
               cx={getIsoPoint(640, 25, 0).x}
               cy={getIsoPoint(640, 25, 0).y}
@@ -734,45 +648,14 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               stroke="#1f1d1b"
               strokeWidth="1"
             />
-            {/* Fountain water jet */}
-            <path
-              d={`M ${getIsoPoint(640, 25, 0).x} ${getIsoPoint(640, 25, 0).y} Q ${getIsoPoint(640, 25, 12).x} ${getIsoPoint(640, 25, 12).y - 5} ${getIsoPoint(644, 28, 2).x} ${getIsoPoint(644, 28, 2).y}`}
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${getIsoPoint(640, 25, 0).x} ${getIsoPoint(640, 25, 0).y} Q ${getIsoPoint(640, 25, 12).x - 6} ${getIsoPoint(640, 25, 12).y - 4} ${getIsoPoint(635, 23, 1).x} ${getIsoPoint(635, 23, 1).y}`}
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
           </g>
         ) : selections[2] === 'c' ? (
-          /* 清晰指引與慢速微行動特區 - Directional signage and scooter parkings */
           <g>
-            {/* Direction Sign Pole */}
             <line x1={getIsoPoint(610, 30, 0).x} y1={getIsoPoint(610, 30, 0).y} x2={getIsoPoint(610, 30, 35).x} y2={getIsoPoint(610, 30, 35).y} stroke="#1f1d1b" strokeWidth="2.5" />
-            <polygon
-              points={`
-                ${getIsoPoint(610, 30, 35).x},${getIsoPoint(610, 30, 35).y}
-                ${getIsoPoint(610, 30, 35).x + 12},${getIsoPoint(610, 30, 35).y + 2}
-                ${getIsoPoint(610, 30, 28).x + 12},${getIsoPoint(610, 30, 28).y + 2}
-                ${getIsoPoint(610, 30, 28).x},${getIsoPoint(610, 30, 28).y}
-              `}
-              fill="#f59e0b"
-              stroke="#1f1d1b"
-              strokeWidth="1.2"
-            />
-            <text x={getIsoPoint(610, 30, 32).x + 3} y={getIsoPoint(610, 30, 32).y + 1} fontSize="5" fontWeight="bold">園道</text>
           </g>
         ) : null}
 
-
         {/* ---------------- COMMERCIAL SEGMENT (X: 420) ---------------- */}
-        {/* Storefront A (Noodle shop) */}
         <PitchedRoofHouse
           x={380}
           y={-70}
@@ -783,18 +666,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillWallFront="#faf0d8"
           fillRoofLeft="#d97706"
           fillRoofFront="#f59e0b"
-        />
-        {/* Shop canopy */}
-        <polygon
-          points={`
-            ${getIsoPoint(358, -54, 26).x},${getIsoPoint(358, -54, 26).y}
-            ${getIsoPoint(402, -54, 26).x},${getIsoPoint(402, -54, 26).y}
-            ${getIsoPoint(402, -44, 20).x},${getIsoPoint(402, -44, 20).y}
-            ${getIsoPoint(358, -44, 20).x},${getIsoPoint(358, -44, 20).y}
-          `}
-          fill="#ef4444"
-          stroke="#1f1d1b"
-          strokeWidth="1.2"
         />
         <polygon
           points={`
@@ -809,10 +680,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         />
         {drawFrontDoor(380, -54, 0, 10, 18, '#8a5c38')}
         {drawFrontWindow(364, -54, 12, 10, 10, '#c2e3f4')}
-        {/* Shop sign text */}
-        <text x={getIsoPoint(395, -54, 28).x} y={getIsoPoint(395, -54, 28).y} fontSize="6" fontWeight="bold" fill="#1f1d1b">麵</text>
 
-        {/* Storefront B (Cafe) */}
         <PitchedRoofHouse
           x={445}
           y={-70}
@@ -825,14 +693,8 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillRoofFront="#dc2626"
         />
         {drawFrontDoor(445, -54, 0, 9, 18, '#1e293b')}
-        {drawFrontWindow(432, -54, 15, 8, 12, '#93c5fd')}
-        {drawFrontWindow(458, -54, 15, 8, 12, '#93c5fd')}
-        {/* Shop sign text */}
-        <text x={getIsoPoint(445, -54, 32).x} y={getIsoPoint(445, -54, 32).y} fontSize="6" fontWeight="bold" fill="#1f1d1b">茶</text>
 
-        {/* Strategy Overlays for Commercial segment */}
         {selections[1] === 'a' ? (
-          /* 地面慢速人車共享街區 - Brick paving texture details */
           <g>
             <path
               d={getElevatedBridgeD(350, 480, 5, 0)}
@@ -842,37 +704,14 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeLinejoin="round"
               opacity="0.8"
             />
-            {/* Pavement details */}
-            <line x1={getIsoPoint(370, 10).x} y1={getIsoPoint(370, 10).y} x2={getIsoPoint(370, -10).x} y2={getIsoPoint(370, -10).y} stroke="#1f1d1b" strokeWidth="0.8" opacity="0.3" />
-            <line x1={getIsoPoint(400, 10).x} y1={getIsoPoint(400, 10).y} x2={getIsoPoint(400, -10).x} y2={getIsoPoint(400, -10).y} stroke="#1f1d1b" strokeWidth="0.8" opacity="0.3" />
-            <line x1={getIsoPoint(430, 10).x} y1={getIsoPoint(430, 10).y} x2={getIsoPoint(430, -10).x} y2={getIsoPoint(430, -10).y} stroke="#1f1d1b" strokeWidth="0.8" opacity="0.3" />
-            <line x1={getIsoPoint(460, 10).x} y1={getIsoPoint(460, 10).y} x2={getIsoPoint(460, -10).x} y2={getIsoPoint(460, -10).y} stroke="#1f1d1b" strokeWidth="0.8" opacity="0.3" />
           </g>
         ) : selections[1] === 'b' ? (
-          /* 自行車停靠點與遮陰休閒廣場 - Large shaded umbrella + bench + bike rack */
           <g>
-            {/* Sun Umbrella */}
             <line x1={getIsoPoint(420, 30, 0).x} y1={getIsoPoint(420, 30, 0).y} x2={getIsoPoint(420, 30, 32).x} y2={getIsoPoint(420, 30, 32).y} stroke="#1f1d1b" strokeWidth="1.5" />
-            {/* Canopy */}
-            <path
-              d={`M ${getIsoPoint(420, 30, 32).x} ${getIsoPoint(420, 30, 32).y} 
-                  Q ${getIsoPoint(420, 30, 32).x - 18} ${getIsoPoint(420, 30, 32).y + 5} ${getIsoPoint(405, 38, 24).x} ${getIsoPoint(405, 38, 24).y}
-                  L ${getIsoPoint(435, 22, 24).x} ${getIsoPoint(435, 22, 24).y} Z`}
-              fill="#3b82f6"
-              stroke="#1f1d1b"
-              strokeWidth="1.2"
-            />
-            {/* Wooden Bench */}
             <IsoBox x={395} y={28} w={15} d={6} h={8} fillTop="#d97706" fillLeft="#b45309" fillFront="#d97706" />
-            {/* Bicycle Rack with a parked bike */}
-            <line x1={getIsoPoint(440, 24, 0).x} y1={getIsoPoint(440, 24, 0).y} x2={getIsoPoint(455, 18, 0).x} y2={getIsoPoint(455, 18, 0).y} stroke="#9ca3af" strokeWidth="3" strokeLinecap="round" />
-            <circle cx={getIsoPoint(445, 22, 4).x} cy={getIsoPoint(445, 22, 4).y} r="3.5" fill="none" stroke="#374151" strokeWidth="1" />
-            <circle cx={getIsoPoint(452, 19, 4).x} cy={getIsoPoint(452, 19, 4).y} r="3.5" fill="none" stroke="#374151" strokeWidth="1" />
           </g>
         ) : selections[1] === 'c' ? (
-          /* 店家物流裝卸與臨停區 - Yellow dashed zone and parked delivery vehicle */
           <g>
-            {/* Yellow dashed parking box on pedestrian path */}
             <polygon
               points={`
                 ${getIsoPoint(395, 35).x},${getIsoPoint(395, 35).y}
@@ -885,17 +724,10 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeWidth="1.5"
               strokeDasharray="3,3"
             />
-            <text x={getIsoPoint(420, 35).x} y={getIsoPoint(420, 35).y} fontSize="6" fontWeight="bold" fill="#b45309">LOADING</text>
-            {/* Parked Delivery Scooter */}
-            <rect x={getIsoPoint(415, 30, 0).x - 4} y={getIsoPoint(415, 30, 0).y - 8} width="8" height="8" rx="1.5" fill="#10b981" stroke="#1f1d1b" strokeWidth="1" />
-            <circle cx={getIsoPoint(415, 30, 0).x - 3} cy={getIsoPoint(415, 30, 0).y + 1} r="2" fill="#1f1d1b" />
-            <circle cx={getIsoPoint(415, 30, 0).x + 3} cy={getIsoPoint(415, 30, 0).y - 1} r="2" fill="#1f1d1b" />
           </g>
         ) : null}
 
-
         {/* ---------------- RESIDENTIAL SEGMENT (X: 200) ---------------- */}
-        {/* House A (Pitched Roof) */}
         <PitchedRoofHouse
           x={175}
           y={-70}
@@ -908,10 +740,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillRoofFront="#e17b70"
         />
         {drawFrontDoor(175, -54, 0, 9, 17, '#78350f')}
-        {drawFrontWindow(164, -54, 25, 8, 9, '#cce3f0')}
-        {drawFrontWindow(186, -54, 25, 8, 9, '#cce3f0')}
 
-        {/* House B (Pitched Roof, taller) */}
         <PitchedRoofHouse
           x={235}
           y={-75}
@@ -924,12 +753,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillRoofFront="#e17b70"
         />
         {drawFrontDoor(235, -59, 0, 10, 18, '#451a03')}
-        {drawFrontWindow(222, -59, 22, 9, 10, '#cce3f0')}
-        {drawFrontWindow(248, -59, 22, 9, 10, '#cce3f0')}
-        {drawFrontWindow(222, -59, 42, 9, 10, '#cce3f0')}
-        {drawFrontWindow(248, -59, 42, 9, 10, '#cce3f0')}
 
-        {/* Balconies facing the greenway */}
         <IsoBox
           x={185}
           y={-50}
@@ -941,34 +765,12 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           fillLeft="#e5e7eb"
           fillFront="#f3f4f6"
         />
-        {/* Balcony Railings */}
-        <line x1={getIsoPoint(177, -46, 28).x} y1={getIsoPoint(177, -46, 28).y} x2={getIsoPoint(177, -46, 20).x} y2={getIsoPoint(177, -46, 20).y} stroke="#1f1d1b" strokeWidth="1" />
-        <line x1={getIsoPoint(193, -54, 28).x} y1={getIsoPoint(193, -54, 28).y} x2={getIsoPoint(193, -54, 20).x} y2={getIsoPoint(193, -54, 20).y} stroke="#1f1d1b" strokeWidth="1" />
 
-        <IsoBox
-          x={245}
-          y={-55}
-          w={18}
-          d={8}
-          h={8}
-          zOffset={22}
-          fillTop="#ffffff"
-          fillLeft="#e5e7eb"
-          fillFront="#f3f4f6"
-        />
-        <line x1={getIsoPoint(236, -51, 30).x} y1={getIsoPoint(236, -51, 30).y} x2={getIsoPoint(236, -51, 22).x} y2={getIsoPoint(236, -51, 22).y} stroke="#1f1d1b" strokeWidth="1" />
-        <line x1={getIsoPoint(254, -59, 30).x} y1={getIsoPoint(254, -59, 30).y} x2={getIsoPoint(254, -59, 22).x} y2={getIsoPoint(254, -59, 22).y} stroke="#1f1d1b" strokeWidth="1" />
-
-        {/* Strategy Overlays for Residential segment */}
         {selections[0] === 'b' ? (
-          /* Raised Elevated Bikeway with Columns & Shadow & Privacy Shield */
           <g>
-            {/* Columns supporting the bridge */}
             <line x1={getIsoPoint(115, -4, 0).x} y1={getIsoPoint(115, -4, 0).y} x2={getIsoPoint(115, -4, 40).x} y2={getIsoPoint(115, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
             <line x1={getIsoPoint(200, -4, 0).x} y1={getIsoPoint(200, -4, 0).y} x2={getIsoPoint(200, -4, 40).x} y2={getIsoPoint(200, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
             <line x1={getIsoPoint(285, -4, 0).x} y1={getIsoPoint(285, -4, 0).y} x2={getIsoPoint(285, -4, 40).x} y2={getIsoPoint(285, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
-
-            {/* Bridge Shadow cast on ground */}
             <path
               d={getElevatedBridgeD(95, 310, 12, 0)}
               stroke="rgba(31,29,27,0.18)"
@@ -976,8 +778,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               fill="none"
               strokeLinecap="round"
             />
-
-            {/* Elevated Bridge Deck */}
             <path
               d={getElevatedBridgeD(95, 310, -4, 40)}
               stroke="#1f1d1b"
@@ -992,8 +792,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               fill="none"
               strokeLinecap="round"
             />
-
-            {/* Green Privacy Shield Wall on the back side of bridge facing houses */}
             <polygon
               points={`
                 ${getIsoPoint(140, -10, 40).x},${getIsoPoint(140, -10, 40).y}
@@ -1006,15 +804,9 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeWidth="1.2"
               opacity="0.8"
             />
-            {/* Visual plants pattern on privacy shield */}
-            <circle cx={getIsoPoint(160, -10, 48).x} cy={getIsoPoint(160, -10, 48).y} r="2.5" fill="#aed0a2" />
-            <circle cx={getIsoPoint(200, -10, 48).x} cy={getIsoPoint(200, -10, 48).y} r="2.5" fill="#aed0a2" />
-            <circle cx={getIsoPoint(240, -10, 48).x} cy={getIsoPoint(240, -10, 48).y} r="2.5" fill="#aed0a2" />
           </g>
         ) : selections[0] === 'c' ? (
-          /* 社區安寧綠色緩衝帶 - Quiet Neighborhood Buffer Green Wall/Hedge */
           <g>
-            {/* Green hedge blocking view between path and houses */}
             <IsoBox
               x={210}
               y={-38}
@@ -1025,27 +817,15 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               fillLeft="#354e3d"
               fillFront="#4b6b55"
             />
-            {/* Little flowers on the hedge */}
-            <circle cx={getIsoPoint(170, -32, 20).x} cy={getIsoPoint(170, -32, 20).y} r="1.5" fill="#e17b70" />
-            <circle cx={getIsoPoint(210, -32, 20).x} cy={getIsoPoint(210, -32, 20).y} r="1.5" fill="#e5c158" />
-            <circle cx={getIsoPoint(250, -32, 20).x} cy={getIsoPoint(250, -32, 20).y} r="1.5" fill="#e17b70" />
           </g>
-        ) : (
-          /* 地面慢速自行車道 - Slow pavement painting */
-          <g>
-            <text x={getIsoPoint(200, -5).x} y={getIsoPoint(200, -5).y} fontSize="7.5" fontWeight="black" fill="#3e5f4c" fontFamily="sans-serif">🚲 慢速區</text>
-          </g>
-        )}
-
+        ) : null}
 
         {/* ========================================================
-            4. INTERACTIVE SEGMENT BUTTON HOTSPOTS (FOREGROUND OVERLAYS)
+            4. INTERACTIVE SEGMENT BUTTON HOTSPOTS (ZONE LABELS)
             ======================================================== */}
         {segments.map(seg => {
           const isSelected = activeSegmentId === seg.id;
-          const hasInsight = collectedInsights[seg.id];
-
-          // Hotspots are anchored at yOffset = 45 (foreground walkway) to prevent overlap with background structures.
+          const hasInsight = collectedInsights[seg.id] || false;
           const anchorPoint = getIsoPoint(seg.x, 45, 0);
 
           return (
@@ -1054,7 +834,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               className={`group ${interactive ? 'cursor-pointer' : ''}`}
               onClick={() => interactive && onSegmentClick && onSegmentClick(seg.id)}
             >
-              {/* Highlight pulsing circle overlay on active selection */}
               {isSelected && (
                 <circle
                   cx={anchorPoint.x}
@@ -1067,8 +846,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                   style={{ animationDuration: '2s' }}
                 />
               )}
-
-              {/* Vertical Flagpole line */}
               <line
                 x1={anchorPoint.x}
                 y1={anchorPoint.y}
@@ -1078,8 +855,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-
-              {/* Small shadow circle at the base */}
               <ellipse
                 cx={anchorPoint.x}
                 cy={anchorPoint.y + 1}
@@ -1087,8 +862,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 ry="3"
                 fill="rgba(31,29,27,0.25)"
               />
-
-              {/* Flagpole Base Dot */}
               <circle
                 cx={anchorPoint.x}
                 cy={anchorPoint.y}
@@ -1097,8 +870,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 stroke="#1f1d1b"
                 strokeWidth="1.5"
               />
-
-              {/* Flagpole Top Circle Badge */}
               <circle
                 cx={anchorPoint.x}
                 cy={anchorPoint.y - 38}
@@ -1108,8 +879,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 strokeWidth="2.5"
                 className="transition-transform duration-200 group-hover:scale-110 shadow-flat-pop"
               />
-
-              {/* Badge Icon (Emoji) */}
               <text
                 x={anchorPoint.x}
                 y={anchorPoint.y - 34}
@@ -1119,16 +888,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               >
                 {seg.icon}
               </text>
-
-              {/* Little checkmark bubble for explored zones */}
-              {hasInsight && (
-                <g transform={`translate(${anchorPoint.x + 8}, ${anchorPoint.y - 45})`}>
-                  <circle cx="0" cy="0" r="5" fill="#8ea63d" stroke="#1f1d1b" strokeWidth="1.2" />
-                  <polyline points="-2.5,-0.5 -1,1.2 2.5,-1.5" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </g>
-              )}
-
-              {/* Floating segment label tag (always visible, highlight on hover/select) */}
               <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y - 62})`}>
                 <rect
                   x="-35"
@@ -1153,7 +912,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                   {seg.name}
                 </text>
               </g>
-
               {/* Selected Strategy Tag Badge (Displays on Strategy revision or final summary screen) */}
               {selections[seg.id] && (
                 <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y + 14})`}>
@@ -1177,11 +935,140 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                     fontWeight="extrabold"
                     fontFamily="sans-serif"
                   >
-                    {seg.id === 0 ? (selections[0] === 'a' ? '平面慢行' : selections[0] === 'b' ? '局部高架 / 隱私簾' : '綠牆遮蔽 / 緩衝帶') :
-                     seg.id === 1 ? (selections[1] === 'a' ? '共享街道 / 慢行' : selections[1] === 'b' ? '共享街道 / 休閒廣場' : '共享街道 / 物流臨停') :
-                     seg.id === 2 ? (selections[2] === 'a' ? 'YouBike / 轉乘樞紐' : selections[2] === 'b' ? '記憶節點 / 歷史廣場' : 'YouBike / 微行動') :
-                     seg.id === 3 ? (selections[3] === 'a' ? '局部高架 / 自行車陸橋' : selections[3] === 'b' ? '平面慢行 / 保護路口' : '平面慢行 / 專用號誌') :
-                     (selections[4] === 'a' ? '綠牆遮蔽 / 複層林蔭' : selections[4] === 'b' ? '雨水花園 / 保水' : '雨水花園 / 降溫廊道')}
+                    {seg.id === 0 ? (selections[0] === 'a' ? '平面慢行' : selections[0] === 'b' ? '局部高架 + 綠牆遮蔽' : '安寧生活緩衝帶') :
+                     seg.id === 1 ? (selections[1] === 'a' ? '地面共享街道' : selections[1] === 'b' ? '自行車停靠點' : selections[1] === 'c' ? '遮蔭廣場' : '外送臨停區') :
+                     seg.id === 2 ? (selections[2] === 'a' ? 'YouBike + transit' : selections[2] === 'b' ? 'pedestrian priority' : 'slow mobility zone') :
+                     seg.id === 3 ? (selections[3] === 'a' ? '局部高架穿越' : selections[3] === 'b' ? '受保護平面穿越' : '人車分流專用號誌') :
+                     (selections[4] === 'a' ? '連續樹冠' : selections[4] === 'b' ? '雨水花園' : selections[4] === 'c' ? '透水鋪面' : '生態降溫廊道')}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+
+        {/* ========================================================
+            5. NPC STANDEES DRAWING (6 STAKEHOLDERS STYLED AS 3D TOKENS)
+            ======================================================== */}
+        {npcsList.map(npc => {
+          const npcPos = getIsoPoint(npc.pct * 10, 25, 0); // Walkway layer
+          const isClose = avatarPosition !== undefined && Math.abs(avatarPosition - npc.pct) <= 4.5;
+          const isTalked = collectedInsights[npc.id] || false;
+
+          return (
+            <g key={npc.id} className="select-none">
+              {/* NPC shadow */}
+              <ellipse
+                cx={npcPos.x}
+                cy={npcPos.y + 12}
+                rx="9"
+                ry="4"
+                fill="rgba(31,29,27,0.18)"
+              />
+
+              {/* Pulsing ring if close and not talked yet */}
+              {isClose && !isTalked && (
+                <circle
+                  cx={npcPos.x}
+                  cy={npcPos.y - 12}
+                  r="16"
+                  fill="none"
+                  stroke="var(--color-brand-yellow)"
+                  strokeWidth="2"
+                  className="animate-ping opacity-60"
+                  style={{ animationDuration: '1.5s' }}
+                />
+              )}
+
+              {/* Standee stick */}
+              <line
+                x1={npcPos.x}
+                y1={npcPos.y + 12}
+                x2={npcPos.x}
+                y2={npcPos.y - 12}
+                stroke="#1f1d1b"
+                strokeWidth="2"
+              />
+
+              {/* Avatar circle frame */}
+              <circle
+                cx={npcPos.x}
+                cy={npcPos.y - 12}
+                r="11"
+                fill={npc.color}
+                stroke="#1f1d1b"
+                strokeWidth="2.2"
+                className="shadow-flat-pop"
+              />
+
+              {/* Avatar Image clip */}
+              <g transform={`translate(${npcPos.x - 10}, ${npcPos.y - 22})`}>
+                <image
+                  href={npc.avatar}
+                  width="20"
+                  height="20"
+                  clipPath="url(#npc-avatar-clip-circle)"
+                />
+              </g>
+
+              {/* Name label tag */}
+              <g transform={`translate(${npcPos.x}, ${npcPos.y - 28})`}>
+                <rect
+                  x="-15"
+                  y="-6"
+                  width="30"
+                  height="11"
+                  rx="3.5"
+                  fill="#ffffff"
+                  stroke="#1f1d1b"
+                  strokeWidth="1.2"
+                  className="shadow-[1px_1px_0px_0px_#1f1d1b]"
+                />
+                <text
+                  x="0"
+                  y="2"
+                  textAnchor="middle"
+                  fill="#1f1d1b"
+                  fontSize="6.5"
+                  fontWeight="black"
+                  fontFamily="sans-serif"
+                >
+                  {npc.name}
+                </text>
+              </g>
+
+              {/* Checkmark bubble if talked */}
+              {isTalked && (
+                <g transform={`translate(${npcPos.x + 8}, ${npcPos.y - 18})`}>
+                  <circle cx="0" cy="0" r="4.5" fill="#8ea63d" stroke="#1f1d1b" strokeWidth="1" />
+                  <polyline points="-2,-0.5 -0.8,1 2,-1" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </g>
+              )}
+
+              {/* Interactive Speech Prompt */}
+              {isClose && !isTalked && (
+                <g transform={`translate(${npcPos.x}, ${npcPos.y - 45})`} className="animate-bounce">
+                  <rect
+                    x="-24"
+                    y="-7"
+                    width="48"
+                    height="12"
+                    rx="3"
+                    fill="var(--color-brand-yellow)"
+                    stroke="#1f1d1b"
+                    strokeWidth="1.2"
+                    className="shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)]"
+                  />
+                  <text
+                    x="0"
+                    y="1.5"
+                    textAnchor="middle"
+                    fill="#1f1d1b"
+                    fontSize="6.5"
+                    fontWeight="black"
+                    fontFamily="sans-serif"
+                  >
+                    💬 Space/E
                   </text>
                 </g>
               )}
@@ -1191,14 +1078,13 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
 
 
         {/* ========================================================
-            5. PLAYER AVATAR WALKING SPRITE (Bobbing walking animation)
+            6. PLAYER AVATAR WALKING SPRITE
             ======================================================== */}
         {avatarCoords && playerRole && (
           <g
             transform={`translate(${avatarCoords.x}, ${avatarCoords.y - 20 - avatarBobZ})`}
             className="transition-all duration-300 ease-out"
           >
-            {/* Shadow beneath walking character */}
             <ellipse
               cx="0"
               cy={15 + avatarBobZ}
@@ -1208,8 +1094,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               className="transition-all duration-300"
               style={{ transform: `scale(${1 - avatarBobZ * 0.05})` }}
             />
-
-            {/* "YOU / 您" floating badge */}
             <rect
               x="-24"
               y="-38"
@@ -1232,8 +1116,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               YOU (您)
             </text>
             <polygon points="0,-23 -4,-18 4,-18" fill="#1f1d1b" />
-
-            {/* Character circle frame */}
             <circle
               cx="0"
               cy="-6"
@@ -1243,8 +1125,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               strokeWidth="2.5"
               className="shadow-[2px_2px_0px_0px_#1f1d1b]"
             />
-
-            {/* ClipPath avatar image */}
             <g transform="translate(-15, -21)">
               <clipPath id="avatar-clip-25d-v2">
                 <circle cx="15" cy="15" r="13.5" />

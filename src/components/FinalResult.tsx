@@ -28,28 +28,30 @@ export const FinalResult: React.FC<FinalResultProps> = ({
   const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
 
   const getSelectionsFromActions = (): Record<number, string> => {
-    const res: Record<number, string> = { 0: 'a', 1: 'a', 2: 'a', 3: 'a', 4: 'a' };
+    const res: Record<number, string> = { 0: 'a', 1: 'a', 2: 'a', 3: 'b', 4: 'a' };
     spatialActions.forEach(action => {
       if (action.startsWith('住宅段：')) {
-        if (action.includes('地面慢速')) res[0] = 'a';
+        if (action.includes('平面慢行')) res[0] = 'a';
         else if (action.includes('局部高架')) res[0] = 'b';
-        else if (action.includes('社區安寧')) res[0] = 'c';
+        else if (action.includes('安寧生活')) res[0] = 'c';
       } else if (action.startsWith('商業段：')) {
-        if (action.includes('地面慢速')) res[1] = 'a';
+        if (action.includes('地面共享')) res[1] = 'a';
         else if (action.includes('自行車停靠')) res[1] = 'b';
-        else if (action.includes('店家物流')) res[1] = 'c';
+        else if (action.includes('遮蔭廣場')) res[1] = 'c';
+        else if (action.includes('外送臨停')) res[1] = 'd';
       } else if (action.startsWith('車站節點：')) {
         if (action.includes('YouBike')) res[2] = 'a';
-        else if (action.includes('行人優先')) res[2] = 'b';
-        else if (action.includes('清晰指引')) res[2] = 'c';
+        else if (action.includes('pedestrian')) res[2] = 'b';
+        else if (action.includes('slow')) res[2] = 'c';
       } else if (action.startsWith('主要路口：')) {
-        if (action.includes('局部自行車')) res[3] = 'a';
-        else if (action.includes('地面保護')) res[3] = 'b';
+        if (action.includes('局部高架')) res[3] = 'a';
+        else if (action.includes('受保護')) res[3] = 'b';
         else if (action.includes('人車分流')) res[3] = 'c';
       } else if (action.startsWith('生態綠帶段：')) {
-        if (action.includes('連續複層')) res[4] = 'a';
-        else if (action.includes('高透水')) res[4] = 'b';
-        else if (action.includes('生態緩衝')) res[4] = 'c';
+        if (action.includes('連續樹冠')) res[4] = 'a';
+        else if (action.includes('雨水花園')) res[4] = 'b';
+        else if (action.includes('透水鋪面')) res[4] = 'c';
+        else if (action.includes('生態降溫')) res[4] = 'd';
       }
     });
     return res;
