@@ -1,178 +1,199 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StakeholderRole } from '@/data/roles';
 import { Greenway25DMap } from './Greenway25DMap';
-import { Sparkles, Check, ArrowRight, Lightbulb, Keyboard, Info, BookOpen, Layers, Eye, EyeOff } from 'lucide-react';
-import { sourceNotes } from '@/data/officialGreenwayData';
+import { Sparkles, Check, ArrowRight, ShieldAlert, Award, Lightbulb, Keyboard, Info, BookOpen, Lock, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { StakeholderRole } from '@/data/roles';
+import { GameStats } from '@/app/page';
 
 interface ExplorationScreenProps {
   playerRole: StakeholderRole;
-  onExploreComplete: (collectedInsights: string[]) => void;
+  stats: GameStats;
+  unlockedLevels: Record<number, boolean>;
+  levelChoices: Record<number, string>;
+  onLevelComplete: (levelId: number, choiceId: string, statsChange: Partial<GameStats>) => void;
+  onFinishGame: () => void;
 }
 
-interface NPC {
+interface Choice {
   id: string;
-  name: string;
+  text: string;
+  feedback: string;
+  effects: Partial<GameStats>;
+}
+
+interface LevelData {
+  id: number;
   title: string;
-  pct: number;
-  avatar: string;
-  cardName: string;
-  dialogue: string;
-  issue: string;
-  insightSummary: string;
-  icon: string;
-  segmentId: number;
+  portalName: string;
   x: number;
   y: number;
+  objective: string;
+  mobs: { name: string; role: string; avatar: string; phrase: string }[];
+  choices: Choice[];
 }
 
-const NPCS_DATA: NPC[] = [
-  {
-    id: 'resident',
-    name: '阿明',
-    title: '周邊居民',
-    pct: 18,
-    avatar: '/avatar_resident.png',
-    cardName: '住宅隱私卡',
-    dialogue: '「鐵路進入地下後，住宅段本來可以很安寧。如果高架自行車道設計在我們陽台二樓高度，每天有幾百個人對著我家看，實在很受不了。我們希望可以平面慢行，或者設置高大的綠牆防隱私遮簾，留給我們起居空間一點隱私和寧靜！」',
-    issue: '🏠 交通通勤 vs 居住隱私',
-    insightSummary: '住宅段非常需要生活隱私、噪音限制與安寧生活過渡設計。',
-    icon: '🏡',
-    segmentId: 0,
-    x: 180,
-    y: 25
+const LEVELS_DATA: Record<number, LevelData> = {
+  1: {
+    id: 1,
+    title: 'Level 1: 日常通行衝突 (住宅與慢行段)',
+    portalName: '🚶 通行協調節點',
+    x: 200,
+    y: 25,
+    objective: '降低高架車流對住宅隱私與行人安全的衝擊。目標：將衝突值降低！',
+    mobs: [
+      { name: '小宇', role: '衝鋒通勤騎士', avatar: '/avatar_commuter.png', phrase: '「高架快又爽，沒人能在平面慢吞吞地騎！時間就是金錢！」' },
+      { name: '陳阿嬤', role: '安全至上長者', avatar: '/avatar_elderly.png', phrase: '「車子騎那麼快，橋又對著我家二樓，吵得睡不著、隱私全沒了！」' }
+    ],
+    choices: [
+      {
+        id: '1a',
+        text: '【方案 A】全線雙軌鋼構高架車道 (騎士高速通過)',
+        feedback: '小宇大聲叫好，但陳阿嬤氣壞了：高架橋正對二樓陽台，起居生活毫無隱私！鄰里抗議四起！',
+        effects: { commuterEff: 25, safetySense: 15, residentSat: -20, ecologicalScore: -10, conflictValue: -20 }
+      },
+      {
+        id: '1b',
+        text: '【方案 B】完全行人優先平面慢行區 (單車速限 10km)',
+        feedback: '陳阿嬤非常高興，但小宇崩潰：這跟牽車走路有什麼兩樣？通勤效率降到冰點，大家寧願騎大馬路！',
+        effects: { residentSat: 25, safetySense: 20, commuterEff: -25, activityVitality: 10, conflictValue: -30 }
+      },
+      {
+        id: '1c',
+        text: '【方案 C】平面水平綠牆分流設計 (1.5米多層次防護植栽)',
+        feedback: '雙贏共識！平面防護綠牆成功隔離了噪音與視線干擾，同時確保通勤車道有適當速度與高透水安全分流！',
+        effects: { residentSat: 20, merchantSat: 5, commuterEff: 10, ecologicalScore: 15, safetySense: 15, conflictValue: -60 }
+      }
+    ]
   },
-  {
-    id: 'shop_owner',
-    name: '莉雅',
-    title: '在地店家',
-    pct: 38,
-    avatar: '/avatar_shopowner.png',
-    cardName: '商業人流卡',
-    dialogue: '「青年路商圈最需要的是地面層的人流和客源。如果把自行車道全部高架化，騎士通勤一分鐘就飛過去，根本不會有人進店消費。我們希望把活動引導到地面層，規劃為地面人車共享街道，並預留臨停區 and 自行車停靠架，這樣才能帶動在地商機！」',
-    issue: '🛍️ 街區商業活力 vs 快速通過',
-    insightSummary: '商業段需要將通勤流轉化為地面停留人潮，並保障店面裝卸物流臨停。',
-    icon: '🛍️',
-    segmentId: 1,
-    x: 380,
-    y: 25
+  2: {
+    id: 2,
+    title: 'Level 2: 商業與生活衝突 (青年路商圈段)',
+    portalName: '🛍️ 商業協調節點',
+    x: 450,
+    y: 25,
+    objective: '平衡商圈人流、外送臨停與周邊居民夜間安寧。目標：平息攤販噪音！',
+    mobs: [
+      { name: '莉雅', role: '夜市攤主代表', avatar: '/avatar_shopowner.png', phrase: '「不准擺設攤位和戶外座位，我們商家生意要怎麼活下去？」' },
+      { name: '阿明', role: '噪音崩潰住戶', avatar: '/avatar_resident.png', phrase: '「油煙味沖天，半夜還有人聚眾喧嘩唱歌，我們明天還要上班啊！」' }
+    ],
+    choices: [
+      {
+        id: '2a',
+        text: '【方案 A】全天候禁設攤商與街頭藝人 (淨空綠道)',
+        feedback: '阿明稱讚清靜，但莉雅生計受重創：整個商圈沒有停留客源，死氣沉沉！店家關門潮爆發！',
+        effects: { residentSat: 25, merchantSat: -25, activityVitality: -25, safetySense: 10, conflictValue: -30 }
+      },
+      {
+        id: '2b',
+        text: '【方案 B】完全開放露天攤商與美食廣場 (不限營業時段)',
+        feedback: '商家大繁榮！但油煙噪音沖天，阿明投訴不斷，警方天天到場，衝突越演越烈！',
+        effects: { merchantSat: 25, activityVitality: 25, residentSat: -25, safetySense: -15, conflictValue: -15 }
+      },
+      {
+        id: '2c',
+        text: '【方案 C】劃設時段性口袋廣場與裝卸貨綠帶分流',
+        feedback: '精準分流！限時 21:00 前結束營業，並預留臨停物流車位與遮蔭口袋廣場，人潮停留意願大增！',
+        effects: { residentSat: 15, merchantSat: 20, activityVitality: 20, ecologicalScore: 5, safetySense: 10, conflictValue: -65 }
+      }
+    ]
   },
-  {
-    id: 'commuter',
-    name: '小宇',
-    title: '通勤 / 騎士',
-    pct: 56,
-    avatar: '/avatar_commuter.png',
-    cardName: '轉乘效率卡',
-    dialogue: '「通勤最重要的就是速度、路徑連續性與轉乘效率。如果綠園道在每個路口或住宅段都斷掉、或者速度限得非常低，我就不會想騎了。我們希望車站節點有便利的 YouBike 停靠站，並保證連續騎行路網的安全效率！」',
-    issue: '🚲 快速通勤 vs 行人安全',
-    insightSummary: '車站節點與通勤線路需要高效率的轉乘樞紐、連續的車道與分流號誌。',
-    icon: '🚲',
-    segmentId: 2,
-    x: 560,
-    y: 25
-  },
-  {
-    id: 'elderly',
-    name: '陳伯伯',
-    title: '高齡漫步者',
-    pct: 84,
-    avatar: '/avatar_elderly.png',
-    cardName: '高齡友善卡',
-    dialogue: '「台南的夏天實在太熱了，如果綠園道全都是硬邦邦的水泥地，我們老人家哪敢出來散步？我們需要寬大的大樹遮陰冠層、平緩無陡坡的無障礙步道，還有走幾步就有的休憩長椅，這樣出門散步才安全舒服啊。」',
-    issue: '🚶 安全步行 vs 自行車高速通過',
-    insightSummary: '高齡市民需要連續林蔭遮陰、平緩通道、充足休息座椅與低速步行環境。',
-    icon: '👴',
-    segmentId: 4,
-    x: 840,
-    y: 25
-  },
-  {
-    id: 'environmentalist',
-    name: '綠野老師',
-    title: '環保團體',
-    pct: 92,
-    avatar: '/avatar_environmentalist.png',
-    cardName: '生態降溫卡',
-    dialogue: '「綠園道是台南這座高溫城市的重要降溫廊道。如果鋪滿不透水水泥，熱島效應會更嚴重。這裡應該大量保留綠地、鋪設透水鋪面，並規劃雨水花園吸收暴雨、廣植林蔭大樹，真正打造會呼吸的都市生態走廊！」',
-    issue: '🌿 生態降溫廊道 vs 水泥鋪面開發',
-    insightSummary: '生態段需減少水泥不透水硬面，廣植複層林蔭、保水透水鋪面與雨水花園。',
-    icon: '🌿',
-    segmentId: 4,
-    x: 920,
-    y: 25
-  },
-  {
-    id: 'government',
-    name: '林科長',
-    title: '市府 / 設計師',
-    pct: 74,
-    avatar: '/avatar_government.png',
-    cardName: '局部高架卡',
-    dialogue: '「從工程可行性與預算來看，路口立體化陸橋造價極高，且會遮擋民房採光；但平面直接穿越幹道又有高度危險。我們需要綜合評估預算、後續維護管理經費與分段交織安全，比如使用保護型路口號誌，或局部高架跨越。」',
-    issue: '🚦 安全可行性 vs 工程造價預算',
-    insightSummary: '主要交織路口需評估局部高架陸橋或地面保護型安全分流與號誌控制。',
-    icon: '🚦',
-    segmentId: 3,
-    x: 740,
-    y: 25
+  3: {
+    id: 3,
+    title: 'Level 3: 綠化、安全與活動衝突 (生態降溫段)',
+    portalName: '🌿 生態休憩協調節點',
+    x: 800,
+    y: 25,
+    objective: '兼顧林蔭生態降溫與夜間防範暗處犯罪。目標：抵制極端水泥派！',
+    mobs: [
+      { name: '綠野老師', role: '生態保育學者', avatar: '/avatar_environmentalist.png', phrase: '「大量鋪設水泥會加劇熱島效應，鳥類和昆蟲都會失去家園！」' },
+      { name: '林小姐', role: '夜行怕黑媽媽', avatar: '/avatar_government.png', phrase: '「晚上黑漆漆的灌木叢容易藏壞人，根本不敢帶小孩來這裡散步！」' }
+    ],
+    choices: [
+      {
+        id: '3a',
+        text: '【方案 A】硬質水泥廣場與全夜強光照明 (消滅生態死角)',
+        feedback: '林小姐覺得安全，但綠野老師痛心：綠園道完全失去呼吸功能，水泥吸熱導致熱島效應嚴重，生態化為零。',
+        effects: { safetySense: 25, activityVitality: 15, ecologicalScore: -30, residentSat: -10, conflictValue: -35 }
+      },
+      {
+        id: '3b',
+        text: '【方案 B】野化森林與零光害生態管制區 (無路燈)',
+        feedback: '生態指標大增！但抱怨暴民在網路上大罵：晚上黑得像鬼片現場，蚊蟲孳生，成了治安死角！',
+        effects: { ecologicalScore: 30, residentSat: 10, safetySense: -25, activityVitality: -20, conflictValue: -25 }
+      },
+      {
+        id: '3c',
+        text: '【方案 C】透水碎石引道與低照度向上遮光暖 LED 引導',
+        feedback: '生態科技結合！向下暖光 LED 確保了行人足部照明安全，又避開了鳥類棲息樹冠；雨水花園與碎石鋪面提供完美透水！',
+        effects: { residentSat: 15, ecologicalScore: 25, safetySense: 20, activityVitality: 10, conflictValue: -70 }
+      }
+    ]
   }
-];
+};
 
-export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole, onExploreComplete }) => {
-  // RPG 2D Player coordinates state in coordinate space
+export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({
+  playerRole,
+  stats,
+  unlockedLevels,
+  levelChoices,
+  onLevelComplete,
+  onFinishGame
+}) => {
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 25 });
-  const [activeNpcForDialogue, setActiveNpcForDialogue] = useState<NPC | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showLegendModal, setShowLegendModal] = useState(false);
-  const [showInventory, setShowInventory] = useState(true);
+  const [activeLevelId, setActiveLevelId] = useState<number | null>(null);
+  const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
+  const [levelStage, setLevelStage] = useState<'dialogue' | 'feedback'>('dialogue');
 
-  // Viewport centering state
-  const [viewportSize, setViewportSize] = useState({ w: 1000, h: 520 });
   const viewportRef = useRef<HTMLDivElement | null>(null);
-
-  // Track collected cards using NPC ID keys
-  const [collectedInsights, setCollectedInsights] = useState<Record<string, boolean>>({
-    resident: false,
-    shop_owner: false,
-    commuter: false,
-    elderly: false,
-    environmentalist: false,
-    government: false
-  });
+  const [viewportSize, setViewportSize] = useState({ w: 1000, h: 520 });
 
   const keysPressed = useRef<Record<string, boolean>>({});
   const requestRef = useRef<number | null>(null);
 
-  // Collision box checking
+  // Set up sizes for 2D panning map
+  const mapScale = 1.6;
+  const mapWidth = 1000 * mapScale;
+  const mapHeight = 520 * mapScale;
+
   const checkCollision = (x: number, y: number) => {
-    // 1. Boundaries of walking
     if (x < 30 || x > 970) return true;
     if (y < -110 || y > 110) return true;
 
-    // 2. Bounding boxes around 3D buildings (Houses & Shops & Station Node)
-    // Residential houses: X = 150 to 260, Y = -95 to -45
+    // Houses
     if (x >= 150 && x <= 260 && y >= -95 && y <= -45) return true;
-
-    // Commercial shops: X = 350 to 470, Y = -95 to -45
+    // Commercial shops
     if (x >= 350 && x <= 470 && y >= -95 && y <= -45) return true;
-
-    // Station building: X = 560 to 660, Y = -105 to -45
+    // Station building
     if (x >= 560 && x <= 660 && y >= -105 && y <= -45) return true;
 
     return false;
   };
 
-  // Euclidean proximity checking for NPCs
-  const getActiveNpcNearby = () => {
-    return NPCS_DATA.find(npc => {
-      const dx = playerPos.x - npc.x;
-      const dy = playerPos.y - npc.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      return distance <= 45; // Close enough to talk
-    });
+  const get2DPointForCamera = (x: number, yOffset: number) => {
+    const ratio = x / 1000;
+    const baseX = 30 + ratio * 940;
+    const baseY = 260;
+    const wiggle = Math.sin(ratio * Math.PI * 2) * 35;
+    const y = yOffset + wiggle;
+    return {
+      x: baseX,
+      y: baseY + y
+    };
   };
 
-  const nearbyNpc = getActiveNpcNearby();
+  const getNearbyLevelId = () => {
+    for (const [idStr, lv] of Object.entries(LEVELS_DATA)) {
+      const id = parseInt(idStr);
+      const dx = playerPos.x - lv.x;
+      const dy = playerPos.y - lv.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist <= 40) return id;
+    }
+    return null;
+  };
+
+  const nearbyLevelId = getNearbyLevelId();
 
   // Keyboard controls listener (Keydown/Keyup state mapping)
   useEffect(() => {
@@ -187,9 +208,9 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
 
       // Dialog trigger
       if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'e' || e.key === 'E') {
-        const activeNearby = getActiveNpcNearby();
-        if (activeNearby) {
-          handleOpenDialogue(activeNearby);
+        const lvId = getNearbyLevelId();
+        if (lvId && unlockedLevels[lvId] && levelChoices[lvId] === undefined) {
+          handleOpenLevel(lvId);
         }
       }
     };
@@ -206,16 +227,16 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [playerPos, activeNpcForDialogue, collectedInsights]);
+  }, [playerPos, unlockedLevels, levelChoices]);
 
   // requestAnimationFrame walk physics loop
   useEffect(() => {
-    if (activeNpcForDialogue) {
+    if (activeLevelId) {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       return;
     }
 
-    const moveSpeed = 2.4;
+    const moveSpeed = 2.8;
 
     const tick = () => {
       let dx = 0;
@@ -261,7 +282,7 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [activeNpcForDialogue]);
+  }, [activeLevelId]);
 
   // Track viewport container dimensions on load/resize
   useEffect(() => {
@@ -289,62 +310,33 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
     }
   }, [toastMsg]);
 
-  const getBlobBgClass = (id: string) => {
-    switch (id) {
-      case 'resident': return 'bg-blob-pink';
-      case 'shop_owner': return 'bg-blob-yellow';
-      case 'commuter': return 'bg-blob-blue';
-      case 'elderly': return 'bg-blob-pink';
-      case 'environmentalist': return 'bg-blob-green';
-      case 'government': return 'bg-gray-200';
-      default: return 'bg-gray-150';
+  const handleOpenLevel = (levelId: number) => {
+    setActiveLevelId(levelId);
+    setLevelStage('dialogue');
+    setSelectedChoiceId(null);
+  };
+
+  const handleLevelChoiceSelect = (choice: Choice) => {
+    setSelectedChoiceId(choice.id);
+    setLevelStage('feedback');
+  };
+
+  const handleConfirmLevelComplete = () => {
+    if (activeLevelId && selectedChoiceId) {
+      const lv = LEVELS_DATA[activeLevelId];
+      const ch = lv.choices.find(c => c.id === selectedChoiceId);
+      if (ch) {
+        onLevelComplete(activeLevelId, selectedChoiceId, ch.effects);
+        setToastMsg(`🎉 已通過 ${lv.title}！`);
+      }
     }
+    setActiveLevelId(null);
+    setSelectedChoiceId(null);
+    setLevelStage('dialogue');
   };
 
-  const handleOpenDialogue = (npc: NPC) => {
-    setActiveNpcForDialogue(npc);
-  };
-
-  const handleCollectInsight = () => {
-    if (!activeNpcForDialogue) return;
-    const npc = activeNpcForDialogue;
-    setCollectedInsights(prev => ({
-      ...prev,
-      [npc.id]: true
-    }));
-    setToastMsg(`公民觀察卡已解鎖：已收集【${npc.cardName}】！`);
-    setActiveNpcForDialogue(null);
-  };
-
-  const handleSegmentClick = (segmentId: number) => {
-    // Teleport character to selected segment in coordinates
-    const segmentLocationsX = [180, 380, 560, 740, 920];
-    const targetX = segmentLocationsX[segmentId] !== undefined ? segmentLocationsX[segmentId] : 180;
-    setPlayerPos({ x: targetX, y: 25 });
-  };
-
-  // Camera viewport translate calculation in pixel space
-  const mapScale = 1.6;
-  const mapWidth = 1000 * mapScale;
-  const mapHeight = 520 * mapScale;
-
-  const getIsoPointForCamera = (x: number, yOffset: number) => {
-    const startX = 80;
-    const startY = 410;
-    const endX = 920;
-    const endY = 130;
-    const ratio = x / 1000;
-    const baseX = startX + (endX - startX) * ratio;
-    const baseY = startY + (endY - startY) * ratio;
-    const wiggle = Math.sin(ratio * Math.PI * 2) * 35;
-    const y = yOffset + wiggle;
-    return {
-      x: baseX - y * 0.65,
-      y: baseY + y * 0.38
-    };
-  };
-
-  const playerScreenCoords = getIsoPointForCamera(playerPos.x, playerPos.y);
+  // Camera scroll offsets
+  const playerScreenCoords = get2DPointForCamera(playerPos.x, playerPos.y);
   const playerPixelX = playerScreenCoords.x * mapScale;
   const playerPixelY = playerScreenCoords.y * mapScale;
 
@@ -354,96 +346,52 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
   const cameraOffsetX = Math.min(0, Math.max(viewportSize.w - mapWidth, rawOffsetX));
   const cameraOffsetY = Math.min(0, Math.max(viewportSize.h - mapHeight, rawOffsetY));
 
-  const totalCollected = Object.values(collectedInsights).filter(Boolean).length;
-  const isExplorationDone = totalCollected >= 3;
-
-  const handleFinishExploration = () => {
-    if (isExplorationDone) {
-      const insightStrings = NPCS_DATA
-        .filter(npc => collectedInsights[npc.id])
-        .map(npc => `${npc.cardName}的觀點：${npc.insightSummary}`);
-      onExploreComplete(insightStrings);
-    }
-  };
+  const allLevelsDone = levelChoices[1] !== undefined && levelChoices[2] !== undefined && levelChoices[3] !== undefined;
 
   return (
-    <div className="flex-1 flex flex-col p-0 bg-[var(--color-bg-warm)] h-full overflow-hidden relative">
+    <div className="flex-1 flex flex-col lg:flex-row gap-4 p-0 h-full overflow-hidden relative font-sans text-left">
       
-      {/* Toast Notification HUD */}
+      {/* Toast Notification */}
       {toastMsg && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-[#e2f0d9] border-3 border-[#1f1d1b] px-5 py-3 rounded-xl text-xs font-black text-[#3e5f4c] shadow-flat-pop animate-bounce flex items-center gap-1.5 select-none">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-[#e2f0d9] border-3 border-[#1f1d1b] px-5 py-3 rounded-xl text-xs font-black text-[#3e5f4c] shadow-flat-pop animate-bounce flex items-center gap-1.5 select-none">
           <span className="text-sm">💡</span>
           <span>{toastMsg}</span>
         </div>
       )}
 
-      <div className="w-full h-full bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-xl p-5 shadow-flat-pop-lg flex flex-col overflow-hidden relative">
+      {/* Left Area: 2.5D Playable World Map */}
+      <div className="flex-1 flex flex-col bg-white border-3 border-[#1f1d1b] rounded-2xl p-4 shadow-flat-pop-lg overflow-hidden relative">
         
-        {/* Progress & Quest HUD Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 border-b-3 border-[#1f1d1b] pb-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blob-blue border-2 border-[#1f1d1b] text-[#1f1d1b] text-[10px] font-bold rounded shadow-[1.5px_1.5px_0px_0px_#1f1d1b] font-mono uppercase tracking-wider">
-              【 PHASE 2 : 2.5D 綠園道實地踏查 】
-            </span>
-            <span className="text-xs font-mono font-bold text-gray-400">已收集觀點卡：{totalCollected} / 6</span>
-          </div>
-          
-          {/* Dynamic Quest Log HUD */}
-          <div className="w-full sm:w-auto bg-[#fff8e6] border-2 border-[#1f1d1b] px-3 py-1 rounded-lg text-[10.5px] font-black text-amber-800 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1">
-            <span className="animate-pulse">🎯</span>
-            <span>當前任務：{totalCollected < 3 ? '探索綠園道，收集 3 張公民觀察卡' : '前往協商圓桌，討論高架自行車道方案'}</span>
-          </div>
-        </div>
-
-        {/* Playable controls instructions & HUD toolbars */}
-        <div className="shrink-0 mb-3 bg-[#FAF8F5] border-2 border-[#1f1d1b] p-2 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)]">
-          <div className="flex items-center gap-2 text-[#1f1d1b] text-[10.5px] font-bold">
-            <Keyboard size={15} className="text-[var(--color-brand-blue)] shrink-0 animate-bounce" />
-            <span>使用 <strong>WASD</strong> 或方向鍵 <strong>← ↑ ↓ →</strong> 自由行走，接近市民代表按 <strong>E</strong> 或 <strong>Space</strong> 開啟交談！</span>
+        {/* HUD control guide bar */}
+        <div className="shrink-0 mb-3 bg-[#FAF8F5] border-2 border-[#1f1d1b] p-2.5 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+          <div className="flex items-center gap-2 text-[#1f1d1b] text-[10px] font-bold">
+            <Keyboard size={14} className="text-[var(--color-brand-blue)] shrink-0 animate-bounce" />
+            <span>使用 <strong>WASD / 方向鍵</strong> 移動。接近發光關卡節點或衝突 NPC，按 <strong>E / 空白鍵</strong> 進行協商對決！</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Map Legend button */}
             <button 
               onClick={() => setShowLegendModal(true)}
               className="px-2.5 py-1 bg-white hover:bg-gray-50 border-2 border-[#1f1d1b] text-[9.5px] font-bold rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1 cursor-pointer"
             >
-              <Layers size={12} className="text-emerald-600" />
-              地圖圖例
+              地圖圖例說明
             </button>
-            {/* Toggle Inventory button */}
-            <button 
-              onClick={() => setShowInventory(!showInventory)}
-              className="px-2.5 py-1 bg-white hover:bg-gray-50 border-2 border-[#1f1d1b] text-[9.5px] font-bold rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1 cursor-pointer"
-            >
-              {showInventory ? (
-                <>
-                  <EyeOff size={12} className="text-rose-500" />
-                  隱藏卡包
-                </>
-              ) : (
-                <>
-                  <Eye size={12} className="text-blue-500" />
-                  顯示卡包
-                </>
-              )}
-            </button>
-            <span className="text-[9.5px] bg-white px-2 py-1 rounded border-2 border-[#1f1d1b] font-bold font-mono">
-              身分：{playerRole.name}
+            <span className="text-[9.5px] bg-[#fff8e6] px-2 py-0.5 rounded border border-amber-300 text-amber-800 font-bold font-mono">
+              目標：降低大眾衝突值 & 解鎖市民大會
             </span>
           </div>
         </div>
 
-        {/* 2.5D Greenway Playable World Viewport (Camera center loop) */}
+        {/* Viewport */}
         <div 
           ref={viewportRef}
-          className="flex-1 min-h-0 relative overflow-hidden border-3 border-[#1f1d1b] rounded-2xl bg-[#FAF8F5] shadow-flat-pop"
+          className="flex-1 min-h-0 relative overflow-hidden border-3 border-[#1f1d1b] rounded-2xl bg-[#FAF8F5] shadow-inner"
         >
-          {/* Scrollable Container */}
+          {/* Scrolling Map */}
           <div
             style={{
               transform: `translate3d(${cameraOffsetX}px, ${cameraOffsetY}px, 0)`,
-              transition: 'transform 0.08s ease-out', // smooth camera follow
+              transition: 'transform 0.08s ease-out',
               width: `${mapWidth}px`,
               height: `${mapHeight}px`
             }}
@@ -452,200 +400,457 @@ export const ExplorationScreen: React.FC<ExplorationScreenProps> = ({ playerRole
             <Greenway25DMap 
               playerPos={playerPos}
               playerRole={playerRole}
-              collectedInsights={collectedInsights}
+              collectedInsights={{
+                resident: levelChoices[1] !== undefined,
+                shop_owner: levelChoices[2] !== undefined,
+                commuter: levelChoices[3] !== undefined,
+                elderly: levelChoices[1] !== undefined,
+                environmentalist: levelChoices[3] !== undefined
+              }}
               interactive={true}
-              onSegmentClick={handleSegmentClick}
               mapState="exploration"
             />
+
+            {/* Level Portals & Conflict NPCs rendered as overlay elements */}
+            {Object.values(LEVELS_DATA).map((lv) => {
+              const pt = get2DPointForCamera(lv.x, lv.y);
+              const left = pt.x * mapScale;
+              const top = pt.y * mapScale;
+              const isUnlocked = unlockedLevels[lv.id];
+              const isCompleted = levelChoices[lv.id] !== undefined;
+
+              return (
+                <div 
+                  key={lv.id} 
+                  style={{ left: `${left}px`, top: `${top}px` }}
+                  className="absolute -translate-x-1/2 -translate-y-[80%] z-20 flex flex-col items-center pointer-events-none"
+                >
+                  {/* Glowing Portal ring on the ground */}
+                  <div className={`w-14 h-6 rounded-full border-2 border-dashed ${
+                    isCompleted ? 'bg-emerald-100/35 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                    isUnlocked ? 'bg-amber-100/35 border-amber-500 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.7)]' :
+                    'bg-gray-100/10 border-gray-300'
+                  }`} />
+
+                  {/* Portal badge tag */}
+                  <div className={`mt-1.5 px-2 py-0.5 rounded border-2 border-black font-mono text-[8.5px] font-bold shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                    isCompleted ? 'bg-emerald-100 text-emerald-800' :
+                    isUnlocked ? 'bg-amber-100 text-amber-800 animate-bounce' :
+                    'bg-gray-100 text-gray-400 border-dashed border-gray-300 shadow-none'
+                  }`}>
+                    {lv.portalName} {isCompleted ? '✅' : isUnlocked ? '⚡' : '🔒'}
+                  </div>
+
+                  {/* Conflict/Angry Emoji bubbles for unlocked levels */}
+                  {isUnlocked && !isCompleted && (
+                    <div className="absolute top-[-44px] bg-red-100 border-2 border-black rounded-full px-2 py-0.5 font-bold text-[10px] text-red-600 animate-bounce flex items-center gap-0.5 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                      <span>💢 對立!</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Final Council Hall Gate Portal (at the end) */}
+            {(() => {
+              const pt = get2DPointForCamera(920, 25);
+              const left = pt.x * mapScale;
+              const top = pt.y * mapScale;
+              return (
+                <div 
+                  style={{ left: `${left}px`, top: `${top}px` }}
+                  className="absolute -translate-x-1/2 -translate-y-[80%] z-20 flex flex-col items-center pointer-events-none"
+                >
+                  <div className={`w-16 h-8 rounded-full border-3 ${
+                    allLevelsDone 
+                      ? 'bg-rose-100/50 border-rose-500 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.7)]' 
+                      : 'bg-gray-200/20 border-dashed border-gray-300'
+                  }`} />
+                  <div className={`mt-1.5 px-3 py-1 rounded-md border-2 border-black font-mono text-[9px] font-bold shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] ${
+                    allLevelsDone ? 'bg-rose-100 text-rose-800 animate-bounce' : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    🏛️ 市民大會堂 {allLevelsDone ? '➔' : '🔒'}
+                  </div>
+                </div>
+              );
+            })()}
+
           </div>
 
-          {/* Near NPC prompt indicator */}
-          {nearbyNpc && !collectedInsights[nearbyNpc.id] && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#ffffff] border-3 border-[#1f1d1b] px-4 py-2.5 rounded-xl text-[11px] font-bold text-[#1f1d1b] shadow-flat-pop z-30 animate-bounce flex items-center gap-1.5 select-none pointer-events-none">
-              <span className="text-sm">💬</span>
-              <span>您已接近 <strong>{nearbyNpc.name}（{nearbyNpc.title}）</strong>，按下 <strong>E</strong> 或 <strong>空白鍵 (Space)</strong> 開始交談！</span>
+          {/* Near Portal prompt indicator overlay */}
+          {nearbyLevelId !== null && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white border-3 border-[#1f1d1b] px-4 py-2.5 rounded-xl text-[11px] font-bold text-[#1f1d1b] shadow-flat-pop z-30 animate-bounce flex items-center gap-1.5 select-none pointer-events-none">
+              <span className="text-sm">🗣️</span>
+              {levelChoices[nearbyLevelId] !== undefined ? (
+                <span>此節點已協調完畢。請前往其他亮起的衝突區域！</span>
+              ) : unlockedLevels[nearbyLevelId] ? (
+                <span>接近 <strong>{LEVELS_DATA[nearbyLevelId].title}</strong>，按下 <strong>E / 空白鍵</strong> 或點選進入對決！</span>
+              ) : (
+                <span>此區段協商被鎖定。請先解決前面的路段衝突！</span>
+              )}
             </div>
           )}
-        </div>
 
-        {/* Collected Insights Deck - RPG Inventory Panel */}
-        {showInventory && (
-          <div className="shrink-0 border-t-3 border-[#1f1d1b] pt-3 mt-3 animate-fade-in">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-[#1f1d1b] font-serif block">[ 🎒 您的公民觀點卡包 / CIVIC INSIGHT DECK ]</span>
-              <div className="text-[8.5px] text-gray-400 font-mono">
-                <span>{sourceNotes.visibleNote}</span>
+          {/* Near Council Hall portal prompt indicator */}
+          {Math.sqrt(Math.pow(playerPos.x - 920, 2) + Math.pow(playerPos.y - 25, 2)) <= 40 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white border-3 border-[#1f1d1b] px-4 py-2.5 rounded-xl text-[11px] font-bold text-[#1f1d1b] shadow-flat-pop z-30 animate-bounce flex items-center gap-1.5 select-none pointer-events-none">
+              <span className="text-sm">🏛️</span>
+              {allLevelsDone ? (
+                <span>已抵達大會堂！請點選右下角 <strong>「召開大會，審定綠園道 ➔」</strong> 按鈕！</span>
+              ) : (
+                <span>大會堂關閉中。必須先解決 Level 1-3 的所有路段衝突！</span>
+              )}
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* Right Area: Stats Dashboard & Quest Log */}
+      <div className="w-full lg:w-72 shrink-0 flex flex-col gap-4">
+        
+        {/* Current Stats Panel */}
+        <div className="bg-white border-3 border-[#1f1d1b] rounded-2xl p-4 shadow-flat-pop flex flex-col justify-between">
+          <div className="border-b-2 border-dashed border-gray-300 pb-2 mb-3">
+            <span className="text-xs font-black text-[#1f1d1b] font-serif flex items-center gap-1">
+              📊 綠園道即時數值系統
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {/* Resident Satisfaction */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🏠 居民滿意度 (Resident Sat)</span>
+                <span>{stats.residentSat}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-rose-400" style={{ width: `${stats.residentSat}%` }} />
               </div>
             </div>
+
+            {/* Merchant Satisfaction */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🛍️ 商家滿意度 (Merchant Sat)</span>
+                <span>{stats.merchantSat}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-amber-400" style={{ width: `${stats.merchantSat}%` }} />
+              </div>
+            </div>
+
+            {/* Commuter Efficiency */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🚲 通勤效率 (Commuter Eff)</span>
+                <span>{stats.commuterEff}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-sky-400" style={{ width: `${stats.commuterEff}%` }} />
+              </div>
+            </div>
+
+            {/* Ecological Score */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🌿 生態棲地分數 (Habitat Score)</span>
+                <span>{stats.ecologicalScore}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-emerald-500" style={{ width: `${stats.ecologicalScore}%` }} />
+              </div>
+            </div>
+
+            {/* Safety Sense */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🚦 安全感指數 (Safety Index)</span>
+                <span>{stats.safetySense}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-blue-400" style={{ width: `${stats.safetySense}%` }} />
+              </div>
+            </div>
+
+            {/* Activity Vitality */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[10px] font-bold text-gray-700">
+                <span>🎪 活動活力值 (Vitality)</span>
+                <span>{stats.activityVitality}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 border border-black rounded-sm overflow-hidden">
+                <div className="h-full bg-purple-400" style={{ width: `${stats.activityVitality}%` }} />
+              </div>
+            </div>
+
+            {/* Conflict Value */}
+            <div className="space-y-0.5 border-t border-dashed border-gray-300 pt-3">
+              <div className="flex justify-between text-[10px] font-extrabold text-red-600">
+                <span className="flex items-center gap-0.5">
+                  <ShieldAlert size={12} className="animate-pulse" />
+                  ⚠️ 綠園道大眾衝突值 (Conflict)
+                </span>
+                <span>{stats.conflictValue}%</span>
+              </div>
+              <div className="h-3 w-full bg-red-50 border-2 border-red-800 rounded-md overflow-hidden relative">
+                <div className="h-full bg-red-600 animate-pulse" style={{ width: `${stats.conflictValue}%` }} />
+                <div className="absolute inset-0 flex items-center justify-center text-[7.5px] font-black text-red-950 uppercase select-none">
+                  {stats.conflictValue > 60 ? '高度對立' : stats.conflictValue > 30 ? '中度分歧' : '順利整合'}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Quest/Level log list */}
+        <div className="bg-[#FAF8F5] border-3 border-[#1f1d1b] rounded-2xl p-4 shadow-flat-pop flex-1 flex flex-col justify-between">
+          <div>
+            <div className="border-b-2 border-dashed border-gray-300 pb-2 mb-3">
+              <span className="text-xs font-black text-[#1f1d1b] font-serif">
+                🎯 協商任務清單 (Quest Log)
+              </span>
+            </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {NPCS_DATA.map((npc) => {
-                const isCollected = collectedInsights[npc.id];
+            <div className="space-y-2.5">
+              {Object.values(LEVELS_DATA).map((lv) => {
+                const isCompleted = levelChoices[lv.id] !== undefined;
+                const isUnlocked = unlockedLevels[lv.id];
                 return (
                   <div 
-                    key={npc.id}
-                    className={`relative p-2 rounded-xl border-2 border-[#1f1d1b] flex flex-col justify-between min-h-[92px] text-left transition-all ${
-                      isCollected 
-                        ? 'bg-white shadow-[2.5px_2.5px_0px_0px_#1f1d1b] scale-100' 
-                        : 'bg-gray-100/50 border-dashed border-gray-400 text-gray-400 scale-95 opacity-60'
+                    key={lv.id} 
+                    onClick={() => isUnlocked && !isCompleted && handleOpenLevel(lv.id)}
+                    className={`p-2 border-2 rounded-xl text-left flex items-start gap-2 select-none transition-all ${
+                      isCompleted ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
+                      isUnlocked ? 'bg-white border-[#1f1d1b] text-[#1f1d1b] cursor-pointer hover:bg-amber-50/20' :
+                      'bg-gray-100/50 border-dashed border-gray-300 text-gray-400'
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className={`px-1.5 py-0.2 rounded text-[7px] font-extrabold uppercase tracking-wider ${
-                        isCollected ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-200 text-gray-400'
-                      }`}>
-                        {npc.cardName}
-                      </span>
-                      <span className="text-sm">
-                        {npc.icon}
-                      </span>
-                    </div>
-
-                    <div className="text-[8.5px] font-bold leading-normal font-sans tracking-tight mb-1 flex-1">
-                      {isCollected ? (
-                        <p className="text-gray-700 line-clamp-3">"{npc.insightSummary}"</p>
-                      ) : (
-                        <div className="h-full flex items-center justify-center italic text-gray-400 text-[8px]">
-                          🔒 [ 探索市民 {npc.name} 解鎖 ]
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-1 mt-1 text-[7px] font-bold">
-                      <span>{isCollected ? `代表：${npc.name}` : '未解鎖'}</span>
-                      {isCollected && <span className="text-emerald-600 font-extrabold text-[7.5px]">💡 已收集</span>}
+                    <span className="text-xs mt-0.5 shrink-0">{isCompleted ? '✅' : isUnlocked ? '⚡' : '🔒'}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-extrabold leading-tight truncate">{lv.title}</div>
+                      <div className="text-[8px] mt-0.5 opacity-80 leading-normal line-clamp-1">
+                        {isCompleted ? '已完成方案協審' : isUnlocked ? '可前往該節點進行協商' : '未解鎖'}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* Quest finish transition panel */}
-        {isExplorationDone && (
-          <div className="mt-4 pt-3 border-t-3 border-[#1f1d1b] flex justify-between items-center shrink-0 animate-fade-in">
-            <div className="text-xs font-sans text-emerald-700 font-bold flex items-center gap-1">
-              <Check size={14} className="animate-bounce" /> 已成功收集超過 3 張公民觀察卡！可以隨時召開審議大會。
-            </div>
-            <button 
-              onClick={handleFinishExploration}
-              className="btn-flat-action px-6 py-2.5 rounded-xl text-xs bg-[var(--color-brand-coral)] hover:bg-[#c06a5f] text-white flex items-center gap-1.5 shadow-flat-pop font-bold cursor-pointer"
+          {/* Submit action button */}
+          <div className="mt-4 border-t border-dashed border-gray-300 pt-3">
+            <button
+              disabled={!allLevelsDone}
+              onClick={onFinishGame}
+              className={`w-full btn-flat-action py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 font-bold shadow-flat-pop ${
+                allLevelsDone 
+                  ? 'bg-rose-500 hover:bg-rose-600 text-white cursor-pointer' 
+                  : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed shadow-none'
+              }`}
             >
-              前往協商任務簡報 <ArrowRight size={14} />
+              <span>🏛️ 召開市民大會，審定綠園道</span>
+              <ArrowRight size={14} />
             </button>
           </div>
-        )}
-
-        {/* Phase 3 NPC Dialogue Bubble Modal Overlay */}
-        {activeNpcForDialogue && (
-          <div className="absolute inset-0 bg-[#1f1d1b]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in rounded-xl">
-            <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 max-w-lg w-full shadow-flat-pop-lg relative animate-scale-in text-left select-none flex flex-col gap-4">
-              
-              <div className="flex items-center gap-3 border-b-2 border-dashed border-gray-300 pb-2 mb-1 shrink-0">
-                <div className={`w-10 h-10 rounded-full border-2 border-[#1f1d1b] ${getBlobBgClass(activeNpcForDialogue.id)} flex items-center justify-center overflow-hidden shrink-0`}>
-                  <img 
-                    src={activeNpcForDialogue.avatar} 
-                    alt={activeNpcForDialogue.name} 
-                    className="w-full h-full object-cover scale-110" 
-                  />
-                </div>
-                <div>
-                  <h4 className="text-sm font-extrabold text-[#1f1d1b] font-serif">{activeNpcForDialogue.name}</h4>
-                  <span className="text-[8px] text-gray-400 font-mono uppercase tracking-wider">{activeNpcForDialogue.title}</span>
-                </div>
-              </div>
-
-              {/* Spatial Issue Tag */}
-              <div className="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg text-[9px] font-bold text-rose-800 flex items-center gap-1 shrink-0">
-                <span className="text-rose-600">📌 相關空間議題：</span>
-                <span>{activeNpcForDialogue.issue}</span>
-              </div>
-
-              {/* Dialogue Box */}
-              <div className="relative bg-[#FAF8F5] border-3 border-[#1f1d1b] p-4 rounded-xl shadow-flat-pop text-xs md:text-sm text-[#1f1d1b] leading-relaxed font-serif font-semibold">
-                <div className="absolute top-[-9px] left-8 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[#1f1d1b]" />
-                <div className="absolute top-[-6px] left-8 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[8px] border-b-[#FAF8F5]" />
-                {activeNpcForDialogue.dialogue}
-              </div>
-
-              <div className="bg-blob-yellow/30 border border-amber-300 px-3 py-2 rounded-lg text-[9.5px] text-amber-800 leading-normal flex items-start gap-1">
-                <Lightbulb size={12} className="shrink-0 mt-0.5 text-amber-600 animate-pulse" />
-                <span>交談後將會獲得：<strong>【{activeNpcForDialogue.cardName}】</strong>，可用於市民協商大會中做為討論證據！</span>
-              </div>
-
-              <button
-                onClick={handleCollectInsight}
-                className="w-full btn-flat-action py-2.5 rounded-xl text-xs bg-[var(--color-brand-green)] text-white shadow-flat-pop font-bold mt-2 cursor-pointer"
-              >
-                收進卡包，解鎖{activeNpcForDialogue.cardName} ➔
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Map Legend Overlay Modal */}
-        {showLegendModal && (
-          <div className="absolute inset-0 bg-[#1f1d1b]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in rounded-xl">
-            <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 max-w-md w-full shadow-flat-pop-lg relative text-left select-none flex flex-col gap-4">
-              <div className="flex items-center gap-2 border-b-2 border-[#1f1d1b] pb-2">
-                <BookOpen className="text-[var(--color-brand-blue)] w-5 h-5" />
-                <h3 className="text-sm font-extrabold text-[#1f1d1b] font-serif">🗺️ 台南綠園道 2.5D 數位雙生地圖圖例</h3>
-              </div>
-
-              <div className="space-y-3.5 text-xs text-[#1f1d1b] leading-relaxed max-h-[300px] overflow-y-auto pr-1">
-                <div className="flex gap-2.5 items-start p-2.5 bg-[#f5efe1] border border-[#d5ccb9] rounded-xl">
-                  <span className="text-base">🏡</span>
-                  <div>
-                    <h5 className="font-bold text-[11px]">住宅段 (暖米色板塊)</h5>
-                    <p className="text-[9.5px] text-gray-500 mt-0.5">鄰近密集老舊透天厝，規劃重點在於防範高架車流的視線隱私干擾與夜間安寧。</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 items-start p-2.5 bg-[#fbf6e2] border border-[#ded8bf] rounded-xl">
-                  <span className="text-base">🛍️</span>
-                  <div>
-                    <h5 className="font-bold text-[11px]">商業段 (暖黃色板塊)</h5>
-                    <p className="text-[9.5px] text-gray-500 mt-0.5">青年路商圈，規劃重點在於將通勤車流引入地面共享街道，帶動沿街店鋪商機。</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 items-start p-2.5 bg-[#ebf3f7] border border-[#cbd5dc] rounded-xl">
-                  <span className="text-base">🚂</span>
-                  <div>
-                    <h5 className="font-bold text-[11px]">車站節點 (水藍色板塊)</h5>
-                    <p className="text-[9.5px] text-gray-500 mt-0.5">台南車站轉乘大廳與 YouBike 車柱，規畫重點在於大眾轉乘效率與行人優先廣場平衡。</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 items-start p-2.5 bg-[#f1f3f5] border border-[#d1d5db] rounded-xl">
-                  <span className="text-base">🚦</span>
-                  <div>
-                    <h5 className="font-bold text-[11px]">主要路口 (水泥灰路段)</h5>
-                    <p className="text-[9.5px] text-gray-500 mt-0.5">主要車行幹道切斷處，規劃重點在於安全跨越（立體自行車天橋或受保護平面路口）。</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 items-start p-2.5 bg-[#edf3ed] border border-[#cbdcbd] rounded-xl">
-                  <span className="text-base">🌿</span>
-                  <div>
-                    <h5 className="font-bold text-[11px]">生態綠帶段 (自然草綠板塊)</h5>
-                    <p className="text-[9.5px] text-gray-500 mt-0.5">熱島效應降溫核心，規劃重點在於複層林蔭冠層、雨水花園與高透水率泥土鋪面。</p>
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => setShowLegendModal(false)}
-                className="w-full btn-flat-action py-2.5 rounded-xl text-xs bg-[var(--color-brand-blue)] text-white shadow-flat-pop font-bold mt-2 cursor-pointer animate-scale-in"
-              >
-                關閉圖例說明
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
 
       </div>
+
+      {/* Map Legend Overlay Modal */}
+      {showLegendModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[#FFFFFF] border-3 border-[#1f1d1b] rounded-2xl p-6 max-w-md w-full shadow-flat-pop-lg relative text-left select-none flex flex-col gap-4">
+            <button 
+              onClick={() => setShowLegendModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 border-b-2 border-black pb-2">
+              <BookOpen className="text-[var(--color-brand-blue)] w-5 h-5" />
+              <h3 className="text-sm font-extrabold text-[#1f1d1b] font-serif">🗺️ 台南綠園道 2D 俯視規劃地圖說明</h3>
+            </div>
+
+            <div className="space-y-3.5 text-xs text-[#1f1d1b] leading-relaxed max-h-[300px] overflow-y-auto pr-1">
+              <div className="flex gap-2.5 items-start p-2.5 bg-[#f5efe1] border border-[#d5ccb9] rounded-xl">
+                <span className="text-base">🏡</span>
+                <div>
+                  <h5 className="font-bold text-[11px]">住宅段 (暖米色板塊)</h5>
+                  <p className="text-[9.5px] text-gray-500 mt-0.5">鄰近密集老舊透天厝，規劃重點在於防範高架車流的視線隱私干擾與夜間安寧。</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 items-start p-2.5 bg-[#fbf6e2] border border-[#ded8bf] rounded-xl">
+                <span className="text-base">🛍️</span>
+                <div>
+                  <h5 className="font-bold text-[11px]">商業段 (暖黃色板塊)</h5>
+                  <p className="text-[9.5px] text-gray-500 mt-0.5">青年路商圈，規劃重點在於將通勤車流引入地面共享街道，帶動沿街店鋪商機。</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 items-start p-2.5 bg-[#edf3ed] border border-[#cbdcbd] rounded-xl">
+                <span className="text-base">🌿</span>
+                <div>
+                  <h5 className="font-bold text-[11px]">生態綠帶段 (自然草綠板塊)</h5>
+                  <p className="text-[9.5px] text-gray-500 mt-0.5">熱島效應降溫核心，規劃重點在於複層林蔭冠層、雨水花園與高透水率泥土鋪面。</p>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowLegendModal(false)}
+              className="w-full btn-flat-action py-2.5 rounded-xl text-xs bg-[var(--color-brand-blue)] text-white shadow-flat-pop font-bold mt-2 cursor-pointer animate-scale-in"
+            >
+              關閉地圖圖例
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dialogue Battle overlay modal for active level */}
+      {activeLevelId !== null && (() => {
+        const lv = LEVELS_DATA[activeLevelId];
+        return (
+          <div className="fixed inset-0 bg-[#1f1d1b]/55 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-white border-3 border-[#1f1d1b] rounded-2xl p-6 max-w-2xl w-full shadow-flat-pop-lg relative animate-scale-in flex flex-col gap-4 text-left">
+              
+              <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2 mb-1 shrink-0">
+                <h3 className="text-sm font-extrabold text-[#1f1d1b] font-serif">{lv.title}</h3>
+                <div className="text-[9px] bg-red-100 border border-red-300 text-red-800 font-mono px-2 py-0.5 rounded font-black">
+                  🎯 任務目標：協調對立價值，降低衝突值
+                </div>
+              </div>
+
+              {levelStage === 'dialogue' ? (
+                <>
+                  {/* Context objective description */}
+                  <div className="bg-[#fff8e6] border border-amber-300 px-3.5 py-2.5 rounded-xl text-[10.5px] text-amber-800 leading-normal flex items-start gap-2">
+                    <Info size={14} className="shrink-0 mt-0.5" />
+                    <div>
+                      <strong>衝突緣起：</strong>{lv.objective}
+                    </div>
+                  </div>
+
+                  {/* Character dialogue showoffs */}
+                  <div className="space-y-3 my-2 max-h-56 overflow-y-auto pr-1">
+                    {lv.mobs.map((mob, idx) => (
+                      <div key={idx} className="flex gap-3 items-start bg-gray-50 border-2 border-[#1f1d1b] p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="w-10 h-10 rounded-full border-2 border-black bg-white flex items-center justify-center overflow-hidden shrink-0">
+                          <img src={mob.avatar} alt={mob.name} className="w-full h-full object-cover scale-110" />
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-black text-gray-500">{mob.name} / {mob.role}</div>
+                          <div className="text-xs font-serif font-semibold text-[#1f1d1b] leading-relaxed mt-0.5">
+                            {mob.phrase}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Choices list */}
+                  <div className="border-t border-dashed border-gray-300 pt-3 space-y-2">
+                    <span className="text-[9.5px] font-black text-gray-400 font-mono block">🛠️ 選擇協調方案對策 / SELECT STRATEGY</span>
+                    <div className="space-y-2">
+                      {lv.choices.map((choice) => (
+                        <button
+                          key={choice.id}
+                          onClick={() => handleLevelChoiceSelect(choice)}
+                          className="w-full text-left px-4 py-3 bg-white border-2 border-[#1f1d1b] rounded-xl text-xs font-bold hover:bg-[#fffdf2] transition-all cursor-pointer shadow-[2px_2px_0px_0px_#1f1d1b] hover:translate-x-1"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span>{choice.text}</span>
+                            <div className="flex gap-1.5">
+                              {Object.entries(choice.effects).map(([k, v]) => {
+                                if (k === 'conflictValue') {
+                                  return (
+                                    <span key={k} className="text-[8px] bg-red-100 text-red-800 border border-red-300 px-1 py-0.2 rounded font-mono">
+                                      衝突 {v}
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Feedback Screen */}
+                  {(() => {
+                    const choice = lv.choices.find(c => c.id === selectedChoiceId);
+                    if (!choice) return null;
+                    return (
+                      <div className="space-y-4 py-2 text-center flex-1 flex flex-col justify-between min-h-[300px]">
+                        
+                        {/* Status change preview */}
+                        <div className="max-w-md w-full mx-auto bg-gray-50 border-3 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center relative">
+                          <div className="absolute top-[-10px] left-6 bg-red-500 border border-black text-white px-2 py-0.5 text-[8.5px] font-black rounded uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                            施作結果 / Design Result
+                          </div>
+                          
+                          <p className="text-xs md:text-sm font-serif font-black text-gray-700 leading-relaxed mb-4">
+                            {choice.feedback}
+                          </p>
+
+                          <div className="border-t border-dashed border-gray-300 pt-3.5">
+                            <span className="text-[8.5px] font-black text-gray-400 block mb-2">📊 數值異動反饋 / STAT CHANGE PREVIEW</span>
+                            <div className="flex flex-wrap justify-center gap-2">
+                              {Object.entries(choice.effects).map(([key, val]) => {
+                                const isPositive = (val || 0) > 0;
+                                let metricLabel = key;
+                                if (key === 'residentSat') metricLabel = '居民滿意';
+                                else if (key === 'merchantSat') metricLabel = '商家滿意';
+                                else if (key === 'commuterEff') metricLabel = '通勤效率';
+                                else if (key === 'ecologicalScore') metricLabel = '生態環境';
+                                else if (key === 'safetySense') metricLabel = '安全感';
+                                else if (key === 'activityVitality') metricLabel = '活動活力';
+                                else if (key === 'conflictValue') metricLabel = '衝突值';
+
+                                return (
+                                  <span key={key} className={`px-2 py-0.5 rounded border text-[8.5px] font-extrabold ${
+                                    key === 'conflictValue' 
+                                      ? 'bg-red-50 border-red-300 text-red-700'
+                                      : isPositive ? 'bg-green-50 border-green-300 text-green-700' : 'bg-rose-50 border-rose-300 text-rose-700'
+                                  }`}>
+                                    {metricLabel} {isPositive ? `+${val}` : val}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Confirmation button */}
+                        <div className="pt-4 border-t border-dashed border-gray-300">
+                          <button
+                            onClick={handleConfirmLevelComplete}
+                            className="btn-flat-action w-full bg-[var(--color-brand-green)] hover:bg-[#a6bf4c] text-white py-3 rounded-2xl text-xs flex items-center justify-center gap-1 cursor-pointer font-bold shadow-flat-pop"
+                          >
+                            <span>確認提交本段對策，更新園道規劃</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 };

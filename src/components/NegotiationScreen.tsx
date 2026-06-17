@@ -527,7 +527,7 @@ export const NegotiationScreen: React.FC<NegotiationScreenProps> = ({
                       {card.title}
                     </span>
                     <p className="mt-1 text-[9px] leading-relaxed text-gray-600 font-medium font-sans">
-                      "{card.text}"
+                      &quot;{card.text}&quot;
                     </p>
                   </div>
                 ))}

@@ -7,11 +7,236 @@ interface Greenway25DMapProps {
   playerPos?: { x: number; y: number }; // Custom 2D coordinate position
   playerRole?: StakeholderRole;
   selections?: Record<number, string>; // selected options (e.g. {0: 'a', 1: 'b'})
-  collectedInsights?: Record<string, boolean>; // Changed from Record<number | string, boolean> to Record<string, boolean> to match NPC IDs
+  collectedInsights?: Record<string, boolean>; // Record<string, boolean> to match NPC IDs
   interactive?: boolean;
   onSegmentClick?: (id: number) => void;
-  mapState?: 'initial' | 'exploration' | 'revision' | 'final'; // New! Map states prop
+  mapState?: 'initial' | 'exploration' | 'revision' | 'final'; // Map states prop
+  wigglingNode?: string | null;
 }
+
+// 1. Flat 2D Projection Helper (Declared at module level)
+const get2DPoint = (x: number, yOffset: number) => {
+  const ratio = x / 1000;
+  const baseX = 30 + ratio * 940;
+  const baseY = 260;
+  // Organic S-curve winding offset (wiggle) running along the corridor
+  const wiggle = Math.sin(ratio * Math.PI * 2) * 35;
+  const y = yOffset + wiggle;
+  return {
+    x: baseX,
+    y: baseY + y
+  };
+};
+
+// Helper to generate winding SVG path string
+const getWindingPathD = (yOffset: number) => {
+  let d = '';
+  for (let x = 30; x <= 970; x += 15) {
+    const pt = get2DPoint(x, yOffset);
+    d += `${x === 30 ? 'M' : 'L'} ${pt.x} ${pt.y} `;
+  }
+  return d;
+};
+
+// --- MODULE-LEVEL SUB-COMPONENTS FOR DRAWING FLAT 2D SHAPES ---
+
+// Flat Rectangle
+const FlatBox: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+  fill: string;
+  onClick?: () => void;
+}> = ({ x, y, w, d, fill, onClick }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g onClick={onClick} className={onClick ? 'cursor-pointer' : ''}>
+      {/* Shadow */}
+      <rect x={p.x - w/2 + 2} y={p.y - d/2 + 2} width={w} height={d} rx="2" fill="rgba(31,29,27,0.1)" />
+      {/* Outline */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d} rx="2" fill={fill} stroke="#1f1d1b" strokeWidth="1.5" />
+    </g>
+  );
+};
+
+// Flat House (top-down view with split pitched roof)
+const FlatHouse: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+  fillWall: string;
+  fillRoof: string;
+}> = ({ x, y, w, d, fillWall, fillRoof }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Shadow */}
+      <rect x={p.x - w/2 + 2} y={p.y - d/2 + 2} width={w} height={d} rx="3" fill="rgba(31,29,27,0.12)" />
+      {/* Wall base */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d} rx="3" fill={fillWall} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Roof (top slope) */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d/2} rx="1" fill={fillRoof} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Roof ridge line */}
+      <line x1={p.x - w/2} y1={p.y} x2={p.x + w/2} y2={p.y} stroke="#1f1d1b" strokeWidth="1.5" />
+    </g>
+  );
+};
+
+// Flat Shop (top-down view with striped awning)
+const FlatShop: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+  fillWall: string;
+  fillRoof: string;
+  fillAwning: string;
+}> = ({ x, y, w, d, fillWall, fillRoof, fillAwning }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Shadow */}
+      <rect x={p.x - w/2 + 2} y={p.y - d/2 + 2} width={w} height={d} rx="3" fill="rgba(31,29,27,0.12)" />
+      {/* Wall base */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d} rx="3" fill={fillWall} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Roof */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d - 10} rx="1.5" fill={fillRoof} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Front Awning strip */}
+      <rect x={p.x - w/2} y={p.y + d/2 - 10} width={w} height="10" fill={fillAwning} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Awning stripes */}
+      {Array.from({ length: 5 }).map((_, i) => (
+        <line
+          key={i}
+          x1={p.x - w/2 + (w / 5) * i}
+          y1={p.y + d/2 - 10}
+          x2={p.x - w/2 + (w / 5) * i}
+          y2={p.y + d/2}
+          stroke="#1f1d1b"
+          strokeWidth="1.5"
+        />
+      ))}
+    </g>
+  );
+};
+
+// Flat Station Node
+const FlatStation: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+}> = ({ x, y, w, d }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Shadow */}
+      <rect x={p.x - w/2 + 3} y={p.y - d/2 + 3} width={w} height={d} rx="4" fill="rgba(31,29,27,0.12)" />
+      {/* Station roof block */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d} rx="4" fill="#c7dbe8" stroke="#1f1d1b" strokeWidth="2" />
+      {/* Skylight strip */}
+      <rect x={p.x - w/3} y={p.y - d/4} width={(w * 2) / 3} height={d/2} rx="2" fill="#1e293b" stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Skylight division lines */}
+      <line x1={p.x} y1={p.y - d/4} x2={p.x} y2={p.y + d/4} stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+      <line x1={p.x - w/6} y1={p.y - d/4} x2={p.x - w/6} y2={p.y + d/4} stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+      <line x1={p.x + w/6} y1={p.y - d/4} x2={p.x + w/6} y2={p.y + d/4} stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+    </g>
+  );
+};
+
+// Flat 2D Tree
+const FlatTree: React.FC<{
+  x: number;
+  y: number;
+  size?: number;
+  color1?: string;
+  color2?: string;
+}> = ({ x, y, size = 18, color1 = '#5a7a68', color2 = '#445f50' }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Shadow */}
+      <circle cx={p.x + 2} cy={p.y + 2} r={size} fill="rgba(31,29,27,0.1)" />
+      {/* Outer canopy circle */}
+      <circle cx={p.x} cy={p.y} r={size} fill={color1} stroke="#1f1d1b" strokeWidth="1.5" />
+      {/* Inner canopy circle */}
+      <circle cx={p.x - size*0.15} cy={p.y - size*0.15} r={size * 0.7} fill={color2} opacity="0.8" />
+      {/* Highlight circle */}
+      <circle cx={p.x - size*0.3} cy={p.y - size*0.3} r={size * 0.3} fill="#ffffff" opacity="0.25" />
+    </g>
+  );
+};
+
+// Flat YouBike Racks
+const FlatYouBikeRacks: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+}> = ({ x, y, w, d }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Rack base */}
+      <rect x={p.x - w/2} y={p.y - d/2} width={w} height={d} rx="1" fill="#e5e7eb" stroke="#1f1d1b" strokeWidth="1.2" />
+      {/* Orange bike icons */}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <g key={i} transform={`translate(${p.x - w/2 + 3 + i * 7}, ${p.y - 1})`}>
+          <rect x="0" y="0" width="4" height="2" rx="0.5" fill="#d97706" stroke="#1f1d1b" strokeWidth="0.8" />
+          <circle cx="0.8" cy="1" r="0.6" fill="#ffffff" stroke="#1f1d1b" strokeWidth="0.4" />
+          <circle cx="3.2" cy="1" r="0.6" fill="#ffffff" stroke="#1f1d1b" strokeWidth="0.4" />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+// Flat 2D Sign
+const FlatCrossingSign: React.FC<{
+  x: number;
+  y: number;
+  wiggling?: boolean;
+}> = ({ x, y, wiggling }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g className={wiggling ? 'animate-wiggle' : ''}>
+      {/* Shadow */}
+      <circle cx={p.x + 1} cy={p.y + 1} r="5" fill="rgba(31,29,27,0.15)" />
+      {/* Pole base */}
+      <circle cx={p.x} cy={p.y} r="4" fill="#374151" stroke="#1f1d1b" strokeWidth="1.2" />
+      {/* Diamond Sign */}
+      <rect x={p.x - 7} y={p.y - 7} width="14" height="14" rx="2" fill="#f3ce6b" stroke="#1f1d1b" strokeWidth="1.2" transform={`rotate(45 ${p.x} ${p.y})`} />
+      <text x={p.x} y={p.y + 2} textAnchor="middle" fontSize="7" fontWeight="black" fill="#1f1d1b">⚠</text>
+    </g>
+  );
+};
+
+// Flat Zebra Crossing
+const FlatZebraCrossing: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+}> = ({ x, y, w, d }) => {
+  const p = get2DPoint(x, y);
+  return (
+    <g>
+      {/* Zebra stripes */}
+      {Array.from({ length: 6 }).map((_, i) => (
+        <rect
+          key={i}
+          x={p.x - w/2}
+          y={p.y - d/2 + (d / 6) * i + 1}
+          width={w}
+          height={d / 12}
+          fill="#ffffff"
+          opacity="0.85"
+        />
+      ))}
+    </g>
+  );
+};
 
 export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   activeSegmentId,
@@ -22,7 +247,8 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   collectedInsights = {},
   interactive = true,
   onSegmentClick,
-  mapState
+  mapState,
+  wigglingNode = null
 }) => {
   // Determine active map state
   const activeState = mapState || (Object.keys(selections).length > 0 ? 'revision' : 'exploration');
@@ -30,29 +256,6 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   // SVG Canvas configuration
   const canvasWidth = 1000;
   const canvasHeight = 520;
-
-  // Floating Board Slab baseline positioning
-  const startX = 80;
-  const startY = 410;
-  const endX = 920;
-  const endY = 130;
-
-  // 1. Isometric Projection Helper
-  const getIsoPoint = (x: number, yOffset: number, z: number = 0) => {
-    const ratio = x / 1000;
-    const baseX = startX + (endX - startX) * ratio;
-    const baseY = startY + (endY - startY) * ratio;
-
-    // Organic S-curve winding offset (wiggle) running along the corridor
-    const wiggle = Math.sin(ratio * Math.PI * 2) * 35;
-    const y = yOffset + wiggle;
-
-    // Perpendicular mapping vectors:
-    return {
-      x: baseX - y * 0.65,
-      y: baseY + y * 0.38 - z
-    };
-  };
 
   // 2. Segments Configuration
   const segments = [
@@ -86,289 +289,16 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   // Helper to interpolate coordinates along the path for the player avatar
   const getCoordinatesAtPct = (pct: number) => {
     // Avatar walks along the pedestrian path (yOffset = 25)
-    return getIsoPoint(pct * 10, 25);
+    return get2DPoint(pct * 10, 25);
   };
 
   const avatarCoords = playerPos 
-    ? getIsoPoint(playerPos.x, playerPos.y) 
+    ? get2DPoint(playerPos.x, playerPos.y) 
     : (avatarPosition !== undefined ? getCoordinatesAtPct(avatarPosition) : null);
 
   const avatarBobZ = playerPos
     ? Math.abs(Math.sin((playerPos.x + playerPos.y) * 0.3)) * 4.5
     : (avatarPosition !== undefined ? Math.abs(Math.sin(avatarPosition * 0.5)) * 4.5 : 0);
-
-  // --- SUB-COMPONENTS FOR DRAWING 3D SHAPES ---
-
-  // 3D Box (Flat Roof)
-  const IsoBox: React.FC<{
-    x: number;
-    y: number;
-    w: number;
-    d: number;
-    h: number;
-    zOffset?: number;
-    fillTop: string;
-    fillLeft: string;
-    fillFront: string;
-    stroke?: string;
-    strokeWidth?: number;
-    onClick?: () => void;
-  }> = ({ x, y, w, d, h, zOffset = 0, fillTop, fillLeft, fillFront, stroke = '#1f1d1b', strokeWidth = 1.5, onClick }) => {
-    const pBLB = getIsoPoint(x - w / 2, y - d / 2, zOffset); // back-left base
-    const pFLB = getIsoPoint(x - w / 2, y + d / 2, zOffset); // front-left base
-    const pFRB = getIsoPoint(x + w / 2, y + d / 2, zOffset); // front-right base
-    const pBRB = getIsoPoint(x + w / 2, y - d / 2, zOffset); // back-right base
-
-    const pBLT = getIsoPoint(x - w / 2, y - d / 2, zOffset + h); // back-left top
-    const pFLT = getIsoPoint(x - w / 2, y + d / 2, zOffset + h); // front-left top
-    const pFRT = getIsoPoint(x + w / 2, y + d / 2, zOffset + h); // front-right top
-    const pBRT = getIsoPoint(x + w / 2, y - d / 2, zOffset + h); // back-right top
-
-    return (
-      <g onClick={onClick} className={onClick ? 'cursor-pointer' : ''}>
-        {/* Left Face */}
-        <polygon
-          points={`${pBLB.x},${pBLB.y} ${pFLB.x},${pFLB.y} ${pFLT.x},${pFLT.y} ${pBLT.x},${pBLT.y}`}
-          fill={fillLeft}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
-        {/* Front Face */}
-        <polygon
-          points={`${pFLB.x},${pFLB.y} ${pFRB.x},${pFRB.y} ${pFRT.x},${pFRT.y} ${pFLT.x},${pFLT.y}`}
-          fill={fillFront}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
-        {/* Top Face */}
-        <polygon
-          points={`${pBLT.x},${pBLT.y} ${pBRT.x},${pBRT.y} ${pFRT.x},${pFRT.y} ${pFLT.x},${pFLT.y}`}
-          fill={fillTop}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
-      </g>
-    );
-  };
-
-  // 3D Pitched Roof House
-  const PitchedRoofHouse: React.FC<{
-    x: number;
-    y: number;
-    w: number;
-    d: number;
-    h: number;
-    fillWallLeft: string;
-    fillWallFront: string;
-    fillRoofLeft: string;
-    fillRoofFront: string;
-  }> = ({ x, y, w, d, h, fillWallLeft, fillWallFront, fillRoofLeft, fillRoofFront }) => {
-    const pBLB = getIsoPoint(x - w / 2, y - d / 2, 0);
-    const pFLB = getIsoPoint(x - w / 2, y + d / 2, 0);
-    const pFRB = getIsoPoint(x + w / 2, y + d / 2, 0);
-
-    const pBLT = getIsoPoint(x - w / 2, y - d / 2, h);
-    const pFLT = getIsoPoint(x - w / 2, y + d / 2, h);
-    const pFRT = getIsoPoint(x + w / 2, y + d / 2, h);
-
-    // Ridge points
-    const roofH = d * 0.45;
-    const pRidgeL = getIsoPoint(x - w / 2, y, h + roofH);
-    const pRidgeR = getIsoPoint(x + w / 2, y, h + roofH);
-
-    return (
-      <g>
-        {/* Left Side Wall */}
-        <polygon
-          points={`${pBLB.x},${pBLB.y} ${pFLB.x},${pFLB.y} ${pFLT.x},${pFLT.y} ${pBLT.x},${pBLT.y}`}
-          fill={fillWallLeft}
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        {/* Front Wall */}
-        <polygon
-          points={`${pFLB.x},${pFLB.y} ${pFRB.x},${pFRB.y} ${pFRT.x},${pFRT.y} ${pFLT.x},${pFLT.y}`}
-          fill={fillWallFront}
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        {/* Roof Left Triangle Gable */}
-        <polygon
-          points={`${pBLT.x},${pBLT.y} ${pFLT.x},${pFLT.y} ${pRidgeL.x},${pRidgeL.y}`}
-          fill={fillRoofLeft}
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        {/* Roof Front Slope */}
-        <polygon
-          points={`${pFLT.x},${pFLT.y} ${pFRT.x},${pFRT.y} ${pRidgeR.x},${pRidgeR.y} ${pRidgeL.x},${pRidgeL.y}`}
-          fill={fillRoofFront}
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-      </g>
-    );
-  };
-
-  // Isometric 3D Tree
-  const IsoTree: React.FC<{
-    x: number;
-    y: number;
-    size?: number;
-    color1?: string;
-    color2?: string;
-  }> = ({ x, y, size = 18, color1 = '#5a7a68', color2 = '#445f50' }) => {
-    const pBase = getIsoPoint(x, y, 0);
-    const pTrunkTop = getIsoPoint(x, y, size * 0.8);
-    const pCanopyCenter = getIsoPoint(x, y, size * 1.4);
-
-    return (
-      <g>
-        {/* Trunk Shadow */}
-        <ellipse
-          cx={pBase.x}
-          cy={pBase.y}
-          rx={size * 0.75}
-          ry={size * 0.35}
-          fill="rgba(31,29,27,0.12)"
-        />
-        {/* Trunk line */}
-        <line
-          x1={pBase.x}
-          y1={pBase.y}
-          x2={pTrunkTop.x}
-          y2={pTrunkTop.y}
-          stroke="#6e4f37"
-          strokeWidth={size / 4}
-          strokeLinecap="round"
-        />
-        {/* Canopy spheres */}
-        <circle
-          cx={pCanopyCenter.x}
-          cy={pCanopyCenter.y}
-          r={size}
-          fill={color1}
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-        />
-        <circle
-          cx={pCanopyCenter.x - size * 0.25}
-          cy={pCanopyCenter.y - size * 0.25}
-          r={size * 0.7}
-          fill={color2}
-          opacity="0.8"
-        />
-        {/* Highlight circle */}
-        <circle
-          cx={pCanopyCenter.x - size * 0.4}
-          cy={pCanopyCenter.y - size * 0.4}
-          r={size * 0.3}
-          fill="#ffffff"
-          opacity="0.2"
-        />
-      </g>
-    );
-  };
-
-  const drawFrontDoor = (x: number, y: number, z: number, w: number, h: number, fill: string = '#8a6245') => {
-    const pFL = getIsoPoint(x - w / 2, y, z);
-    const pFR = getIsoPoint(x + w / 2, y, z);
-    const pTR = getIsoPoint(x + w / 2, y, z + h);
-    const pTL = getIsoPoint(x - w / 2, y, z + h);
-    return (
-      <polygon
-        points={`${pFL.x},${pFL.y} ${pFR.x},${pFR.y} ${pTR.x},${pTR.y} ${pTL.x},${pTL.y}`}
-        fill={fill}
-        stroke="#1f1d1b"
-        strokeWidth="1.2"
-      />
-    );
-  };
-
-  const drawFrontWindow = (x: number, y: number, z: number, w: number, h: number, fill: string = '#cce3f0') => {
-    const pFL = getIsoPoint(x - w / 2, y, z);
-    const pFR = getIsoPoint(x + w / 2, y, z);
-    const pTR = getIsoPoint(x + w / 2, y, z + h);
-    const pTL = getIsoPoint(x - w / 2, y, z + h);
-    return (
-      <polygon
-        points={`${pFL.x},${pFL.y} ${pFR.x},${pFR.y} ${pTR.x},${pTR.y} ${pTL.x},${pTL.y}`}
-        fill={fill}
-        stroke="#1f1d1b"
-        strokeWidth="1.2"
-      />
-    );
-  };
-
-  const getWindingPathD = (yOffset: number) => {
-    let d = '';
-    for (let x = 30; x <= 970; x += 15) {
-      const pt = getIsoPoint(x, yOffset, 0);
-      d += `${x === 30 ? 'M' : 'L'} ${pt.x} ${pt.y} `;
-    }
-    return d;
-  };
-
-  const getElevatedBridgeD = (xStart: number, xEnd: number, yOffset: number, z: number) => {
-    let d = '';
-    for (let x = xStart; x <= xEnd; x += 15) {
-      const pt = getIsoPoint(x, yOffset, z);
-      d += `${x === xStart ? 'M' : 'L'} ${pt.x} ${pt.y} `;
-    }
-    return d;
-  };
-
-  // Ground Slab coordinates
-  const pSlabBackLeft = getIsoPoint(30, -110, 0);
-  const pSlabFrontLeft = getIsoPoint(30, 110, 0);
-  const pSlabBackLeftB = getIsoPoint(30, -110, -35);
-  const pSlabFrontLeftB = getIsoPoint(30, 110, -35);
-  const pSlabFrontRight = getIsoPoint(970, 110, 0);
-  const pSlabFrontRightB = getIsoPoint(970, 110, -35);
-
-  const renderGridLines = () => {
-    const lines = [];
-    for (let x = 100; x <= 900; x += 50) {
-      const p1 = getIsoPoint(x, -110, 0);
-      const p2 = getIsoPoint(x, 110, 0);
-      lines.push(
-        <line
-          key={`grid-x-${x}`}
-          x1={p1.x}
-          y1={p1.y}
-          x2={p2.x}
-          y2={p2.y}
-          stroke="#1f1d1b"
-          strokeWidth="0.5"
-          opacity="0.08"
-        />
-      );
-    }
-    for (let y = -90; y <= 90; y += 30) {
-      const p1 = getIsoPoint(30, y, 0);
-      const p2 = getIsoPoint(970, y, 0);
-      lines.push(
-        <line
-          key={`grid-y-${y}`}
-          x1={p1.x}
-          y1={p1.y}
-          x2={p2.x}
-          y2={p2.y}
-          stroke="#1f1d1b"
-          strokeWidth="0.5"
-          opacity="0.08"
-        />
-      );
-    }
-    return lines;
-  };
 
   // Construct Dynamic Y-Sorted Middle Occlusion Layer
   const renderList: { y: number; render: () => React.JSX.Element }[] = [];
@@ -377,99 +307,67 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   renderList.push({
     y: -70,
     render: () => (
-      <PitchedRoofHouse
-        key="res-house-1"
-        x={175}
-        y={-70}
-        w={42}
-        d={32}
-        h={48}
-        fillWallLeft="#fbc4c6"
-        fillWallFront="#fadbdc"
-        fillRoofLeft="#b91c1c"
-        fillRoofFront="#e17b70"
-      />
+      <g key="res-houses-group" className={wigglingNode === 'residential' ? 'animate-wiggle' : ''}>
+        <FlatHouse
+          key="res-house-1"
+          x={175}
+          y={-70}
+          w={42}
+          d={32}
+          fillWall="#fbc4c6"
+          fillRoof="#e17b70"
+        />
+        <FlatHouse
+          key="res-house-2"
+          x={235}
+          y={-75}
+          w={45}
+          d={32}
+          fillWall="#fbc4c6"
+          fillRoof="#e17b70"
+        />
+        {/* Balcony */}
+        <FlatBox
+          key="res-balcony"
+          x={185}
+          y={-50}
+          w={16}
+          d={8}
+          fill="#f3f4f6"
+        />
+      </g>
     )
   });
 
-  renderList.push({
-    y: -75,
-    render: () => (
-      <PitchedRoofHouse
-        key="res-house-2"
-        x={235}
-        y={-75}
-        w={45}
-        d={32}
-        h={62}
-        fillWallLeft="#fbc4c6"
-        fillWallFront="#fadbdc"
-        fillRoofLeft="#b91c1c"
-        fillRoofFront="#e17b70"
-      />
-    )
-  });
-
-  renderList.push({
-    y: -50,
-    render: () => (
-      <IsoBox
-        key="res-balcony"
-        x={185}
-        y={-50}
-        w={16}
-        d={8}
-        h={8}
-        zOffset={20}
-        fillTop="#ffffff"
-        fillLeft="#e5e7eb"
-        fillFront="#f3f4f6"
-      />
-    )
-  });
-
-  // Residential Strategies (only show if not in initial/exploration proposed states)
+  // Residential Strategies
   if (activeState === 'revision' || activeState === 'final') {
     if (selections[0] === 'b') {
       renderList.push({
         y: -4,
         render: () => (
           <g key="res-strategy-elevated">
-            <line x1={getIsoPoint(115, -4, 0).x} y1={getIsoPoint(115, -4, 0).y} x2={getIsoPoint(115, -4, 40).x} y2={getIsoPoint(115, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
-            <line x1={getIsoPoint(200, -4, 0).x} y1={getIsoPoint(200, -4, 0).y} x2={getIsoPoint(200, -4, 40).x} y2={getIsoPoint(200, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
-            <line x1={getIsoPoint(285, -4, 0).x} y1={getIsoPoint(285, -4, 0).y} x2={getIsoPoint(285, -4, 40).x} y2={getIsoPoint(285, -4, 40).y} stroke="#1f1d1b" strokeWidth="3.5" />
+            {/* Draw flat elevated bicycle path bridge path */}
             <path
-              d={getElevatedBridgeD(95, 310, 12, 0)}
-              stroke="rgba(31,29,27,0.18)"
-              strokeWidth="10"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={getElevatedBridgeD(95, 310, -4, 40)}
+              d={getWindingPathD(-4).split(' L').slice(15, 60).join(' L')}
               stroke="#1f1d1b"
-              strokeWidth="7"
+              strokeWidth="12"
               fill="none"
               strokeLinecap="round"
             />
             <path
-              d={getElevatedBridgeD(95, 310, -4, 40)}
+              d={getWindingPathD(-4).split(' L').slice(15, 60).join(' L')}
               stroke="#c5bead"
-              strokeWidth="4"
+              strokeWidth="8"
               fill="none"
               strokeLinecap="round"
             />
-            <polygon
-              points={`
-                ${getIsoPoint(140, -10, 40).x},${getIsoPoint(140, -10, 40).y}
-                ${getIsoPoint(260, -10, 40).x},${getIsoPoint(260, -10, 40).y}
-                ${getIsoPoint(260, -10, 56).x},${getIsoPoint(260, -10, 56).y}
-                ${getIsoPoint(140, -10, 56).x},${getIsoPoint(140, -10, 56).y}
-              `}
-              fill="#5a7a68"
-              stroke="#1f1d1b"
-              strokeWidth="1.2"
-              opacity="0.8"
+            {/* Green privacy shield wall indicator */}
+            <path
+              d={getWindingPathD(-10).split(' L').slice(18, 56).join(' L')}
+              stroke="#5a7a68"
+              strokeWidth="3"
+              fill="none"
+              strokeLinecap="round"
             />
           </g>
         )
@@ -478,16 +376,13 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
       renderList.push({
         y: -38,
         render: () => (
-          <IsoBox
+          <FlatBox
             key="res-strategy-wall"
             x={210}
             y={-38}
             w={110}
             d={12}
-            h={28}
-            fillTop="#4b6b55"
-            fillLeft="#354e3d"
-            fillFront="#4b6b55"
+            fill="#4b6b55"
           />
         )
       });
@@ -498,64 +393,37 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   renderList.push({
     y: -70,
     render: () => (
-      <g key="comm-shop-1">
-        <PitchedRoofHouse
+      <g key="comm-shops-group" className={wigglingNode === 'commercial' ? 'animate-wiggle' : ''}>
+        <FlatShop
+          key="comm-shop-1"
           x={380}
           y={-70}
           w={45}
           d={32}
-          h={42}
-          fillWallLeft="#fef3c7"
-          fillWallFront="#faf0d8"
-          fillRoofLeft="#d97706"
-          fillRoofFront="#f59e0b"
+          fillWall="#faf0d8"
+          fillRoof="#f59e0b"
+          fillAwning="#d97706"
         />
-        <polygon
-          points={`
-            ${getIsoPoint(358, -44, 20).x},${getIsoPoint(358, -44, 20).y}
-            ${getIsoPoint(402, -44, 20).x},${getIsoPoint(402, -44, 20).y}
-            ${getIsoPoint(402, -44, 16).x},${getIsoPoint(402, -44, 16).y}
-            ${getIsoPoint(358, -44, 16).x},${getIsoPoint(358, -44, 16).y}
-          `}
-          fill="#ffffff"
-          stroke="#1f1d1b"
-          strokeWidth="1.2"
-        />
-        {drawFrontDoor(380, -54, 0, 10, 18, '#8a5c38')}
-        {drawFrontWindow(364, -54, 12, 10, 10, '#c2e3f4')}
-      </g>
-    )
-  });
-
-  renderList.push({
-    y: -70,
-    render: () => (
-      <g key="comm-shop-2">
-        <PitchedRoofHouse
+        <FlatShop
+          key="comm-shop-2"
           x={445}
           y={-70}
           w={42}
           d={32}
-          h={44}
-          fillWallLeft="#fee2e2"
-          fillWallFront="#fde8e8"
-          fillRoofLeft="#b91c1c"
-          fillRoofFront="#dc2626"
+          fillWall="#fde8e8"
+          fillRoof="#dc2626"
+          fillAwning="#b91c1c"
         />
-        {drawFrontDoor(445, -54, 0, 9, 18, '#1e293b')}
       </g>
     )
   });
 
-  // Commercial Strategy: YouBike rack
+  // Commercial Strategy: YouBike rack/parking
   if ((activeState === 'revision' || activeState === 'final') && selections[1] === 'b') {
     renderList.push({
       y: 28,
       render: () => (
-        <g key="comm-strategy-racks">
-          <line x1={getIsoPoint(420, 30, 0).x} y1={getIsoPoint(420, 30, 0).y} x2={getIsoPoint(420, 30, 32).x} y2={getIsoPoint(420, 30, 32).y} stroke="#1f1d1b" strokeWidth="1.5" />
-          <IsoBox x={395} y={28} w={15} d={6} h={8} fillTop="#d97706" fillLeft="#b45309" fillFront="#d97706" />
-        </g>
+        <FlatYouBikeRacks key="comm-strategy-racks" x={395} y={28} w={20} d={8} />
       )
     });
   }
@@ -564,61 +432,24 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   renderList.push({
     y: -75,
     render: () => (
-      <g key="station-main">
-        <IsoBox
+      <g key="station-group" className={wigglingNode === 'station' ? 'animate-wiggle' : ''}>
+        <FlatStation
+          key="station-main-box"
           x={620}
           y={-75}
           w={70}
           d={45}
-          h={60}
-          fillTop="#dceaf5"
-          fillLeft="#b2c9db"
-          fillFront="#c7dbe8"
         />
-        <polygon
-          points={`
-            ${getIsoPoint(600, -52.5, 0).x},${getIsoPoint(600, -52.5, 0).y}
-            ${getIsoPoint(640, -52.5, 0).x},${getIsoPoint(640, -52.5, 0).y}
-            ${getIsoPoint(640, -52.5, 30).x},${getIsoPoint(640, -52.5, 30).y}
-            ${getIsoPoint(600, -52.5, 30).x},${getIsoPoint(600, -52.5, 30).y}
-          `}
-          fill="#1e293b"
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
+        {/* Clock Tower block top-down */}
+        <FlatBox
+          key="station-tower-box"
+          x={580}
+          y={-75}
+          w={22}
+          d={22}
+          fill="#8cb1cc"
         />
       </g>
-    )
-  });
-
-  renderList.push({
-    y: -75,
-    render: () => (
-      <IsoBox
-        key="station-tower"
-        x={580}
-        y={-75}
-        w={22}
-        d={22}
-        h={95}
-        fillTop="#a5c4db"
-        fillLeft="#769bb7"
-        fillFront="#8cb1cc"
-      />
-    )
-  });
-
-  renderList.push({
-    y: -64,
-    render: () => (
-      <circle
-        key="station-clock"
-        cx={getIsoPoint(580, -64, 82).x}
-        cy={getIsoPoint(580, -64, 82).y}
-        r="4.5"
-        fill="#ffffff"
-        stroke="#1f1d1b"
-        strokeWidth="1.2"
-      />
     )
   });
 
@@ -629,8 +460,10 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         y: 35,
         render: () => (
           <g key="station-strategy-transit">
-            <IsoBox x={665} y={35} w={30} d={12} h={25} fillTop="#ef4444" fillLeft="#991b1b" fillFront="#dc2626" />
-            <line x1={getIsoPoint(600, 40, 0).x} y1={getIsoPoint(600, 40, 0).y} x2={getIsoPoint(630, 28, 0).x} y2={getIsoPoint(630, 28, 0).y} stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
+            {/* Bus shelter flat box */}
+            <FlatBox x={665} y={35} w={30} d={12} fill="#dc2626" />
+            {/* YouBike lane line */}
+            <line x1={get2DPoint(600, 40).x} y1={get2DPoint(600, 40).y} x2={get2DPoint(630, 28).x} y2={get2DPoint(630, 28).y} stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
           </g>
         )
       });
@@ -638,48 +471,23 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
       renderList.push({
         y: 30,
         render: () => (
-          <line key="station-strategy-sign" x1={getIsoPoint(610, 30, 0).x} y1={getIsoPoint(610, 30, 0).y} x2={getIsoPoint(610, 30, 35).x} y2={getIsoPoint(610, 30, 35).y} stroke="#1f1d1b" strokeWidth="2.5" />
+          /* Small slow sign block */
+          <circle key="station-strategy-sign" cx={get2DPoint(610, 30).x} cy={get2DPoint(610, 30).y} r="6" fill="#ef4444" stroke="#1f1d1b" strokeWidth="1.5" />
         )
       });
     }
   }
 
-  // 4. Crossing Strategy (🚦 Bridge or Signal Light)
+  // 4. Crossing Strategy (🚦 Bridge or zebra)
   if (activeState === 'revision' || activeState === 'final') {
     if (selections[3] === 'a') {
       renderList.push({
         y: -2,
         render: () => (
           <g key="crossing-strategy-elevated">
-            <line x1={getIsoPoint(720, -2, 0).x} y1={getIsoPoint(720, -2, 0).y} x2={getIsoPoint(720, -2, 45).x} y2={getIsoPoint(720, -2, 45).y} stroke="#1f1d1b" strokeWidth="3.5" />
-            <line x1={getIsoPoint(835, -2, 0).x} y1={getIsoPoint(835, -2, 0).y} x2={getIsoPoint(835, -2, 45).x} y2={getIsoPoint(835, -2, 45).y} stroke="#1f1d1b" strokeWidth="3.5" />
-            <path
-              d={getElevatedBridgeD(695, 860, 15, 0)}
-              stroke="rgba(31,29,27,0.18)"
-              strokeWidth="11"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={getElevatedBridgeD(695, 860, -2, 45)}
-              stroke="#1f1d1b"
-              strokeWidth="7"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={getElevatedBridgeD(695, 860, -2, 45)}
-              stroke="url(#metal-bridge)"
-              strokeWidth="4"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${getIsoPoint(720, -2, 45).x} ${getIsoPoint(720, -2, 45).y} Q ${getIsoPoint(780, -2, 75).x} ${getIsoPoint(780, -2, 75).y} ${getIsoPoint(835, -2, 45).x} ${getIsoPoint(835, -2, 45).y}`}
-              fill="none"
-              stroke="#1f1d1b"
-              strokeWidth="2"
-            />
+            {/* Simple flat elevated bridge path */}
+            <line x1={get2DPoint(695, 10).x} y1={get2DPoint(695, 10).y} x2={get2DPoint(860, 10).x} y2={get2DPoint(860, 10).y} stroke="#1f1d1b" strokeWidth="8" strokeLinecap="round" />
+            <line x1={get2DPoint(695, 10).x} y1={get2DPoint(695, 10).y} x2={get2DPoint(860, 10).x} y2={get2DPoint(860, 10).y} stroke="#e57a73" strokeWidth="4" strokeLinecap="round" />
           </g>
         )
       });
@@ -688,10 +496,9 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         y: 40,
         render: () => (
           <g key="crossing-strategy-signals">
-            <line x1={getIsoPoint(750, 40, 0).x} y1={getIsoPoint(750, 40, 0).y} x2={getIsoPoint(750, 40, 35).x} y2={getIsoPoint(750, 40, 35).y} stroke="#374151" strokeWidth="2" />
-            <rect x={getIsoPoint(750, 40, 35).x - 3} y={getIsoPoint(750, 40, 35).y - 8} width="6" height="10" rx="1" fill="#1f1d1b" stroke="#ffffff" strokeWidth="0.5" />
-            <circle cx={getIsoPoint(750, 40, 35).x} cy={getIsoPoint(750, 40, 35).y - 5} r="1.8" fill="#ef4444" />
-            <circle cx={getIsoPoint(750, 40, 35).x} cy={getIsoPoint(750, 40, 35).y - 1} r="1.8" fill="#10b981" />
+            {/* Small flat signal traffic light circle */}
+            <circle cx={get2DPoint(750, 40).x} cy={get2DPoint(750, 40).y} r="5" fill="#1f1d1b" stroke="#ffffff" strokeWidth="1" />
+            <circle cx={get2DPoint(750, 40).x} cy={get2DPoint(750, 40).y} r="2.2" fill="#ef4444" />
           </g>
         )
       });
@@ -701,45 +508,49 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
   // 5. Ecological Segment (🌿 Trees)
   renderList.push({
     y: -70,
-    render: () => <IsoTree key="eco-tree-1" x={860} y={-70} size={20} color1="#3e5f4c" color2="#2d4838" />
+    render: () => <FlatTree key="eco-tree-1" x={860} y={-70} size={20} color1="#3e5f4c" color2="#2d4838" />
   });
   renderList.push({
     y: -60,
-    render: () => <IsoTree key="eco-tree-2" x={930} y={-60} size={22} color1="#5a7a68" color2="#3e5f4c" />
+    render: () => <FlatTree key="eco-tree-2" x={930} y={-60} size={22} color1="#5a7a68" color2="#3e5f4c" />
   });
   renderList.push({
     y: 65,
-    render: () => <IsoTree key="eco-tree-3" x={900} y={65} size={18} color1="#8ea63d" color2="#748c2b" />
+    render: () => (
+      <g key="eco-tree-3-group" className={wigglingNode === 'ecological' ? 'animate-wiggle' : ''}>
+        <FlatTree key="eco-tree-3" x={900} y={65} size={18} color1="#8ea63d" color2="#748c2b" />
+      </g>
+    )
   });
 
   // Ecology Strategy: Extra canopy trees
   if ((activeState === 'revision' || activeState === 'final') && selections[4] === 'a') {
     renderList.push({
       y: -45,
-      render: () => <IsoTree key="eco-strategy-tree-1" x={875} y={-45} size={21} color1="#283e31" color2="#1b2a21" />
+      render: () => <FlatTree key="eco-strategy-tree-1" x={875} y={-45} size={21} color1="#283e31" color2="#1b2a21" />
     });
     renderList.push({
       y: -35,
-      render: () => <IsoTree key="eco-strategy-tree-2" x={915} y={-35} size={23} color1="#334f3f" color2="#24382c" />
+      render: () => <FlatTree key="eco-strategy-tree-2" x={915} y={-35} size={23} color1="#334f3f" color2="#24382c" />
     });
   }
 
   // 6. Generic Environment Decor Trees (Depth sorted)
   renderList.push({
     y: -80,
-    render: () => <IsoTree key="decor-tree-1" x={100} y={-80} size={18} />
+    render: () => <FlatTree key="decor-tree-1" x={100} y={-80} size={18} />
   });
   renderList.push({
     y: 80,
-    render: () => <IsoTree key="decor-tree-2" x={280} y={80} size={16} />
+    render: () => <FlatTree key="decor-tree-2" x={280} y={80} size={16} />
   });
   renderList.push({
     y: -90,
-    render: () => <IsoTree key="decor-tree-3" x={510} y={-90} size={20} />
+    render: () => <FlatTree key="decor-tree-3" x={510} y={-90} size={20} />
   });
   renderList.push({
     y: 80,
-    render: () => <IsoTree key="decor-tree-4" x={690} y={80} size={18} />
+    render: () => <FlatTree key="decor-tree-4" x={690} y={80} size={18} />
   });
 
   // 7. NPCs Standees (Only show in exploration mode)
@@ -749,26 +560,25 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         ? Math.sqrt(Math.pow(playerPos.x - (npc.pct * 10), 2) + Math.pow(playerPos.y - 25, 2)) <= 45
         : (avatarPosition !== undefined && Math.abs(avatarPosition - npc.pct) <= 4.5);
       const isTalked = collectedInsights[npc.id] || false;
-      const npcPos = getIsoPoint(npc.pct * 10, 25, 0);
+      const npcPos = get2DPoint(npc.pct * 10, 25);
 
       renderList.push({
         y: 25,
         render: () => (
           <g key={`npc-${npc.id}`} className="select-none">
-            {/* NPC shadow */}
-            <ellipse
+            {/* Shadow */}
+            <circle
               cx={npcPos.x}
-              cy={npcPos.y + 12}
-              rx="9"
-              ry="4"
-              fill="rgba(31,29,27,0.18)"
+              cy={npcPos.y}
+              r="14"
+              fill="rgba(31,29,27,0.12)"
             />
 
             {/* Pulsing ring if close and not talked yet */}
             {isClose && !isTalked && (
               <circle
                 cx={npcPos.x}
-                cy={npcPos.y - 12}
+                cy={npcPos.y}
                 r="16"
                 fill="none"
                 stroke="var(--color-brand-yellow)"
@@ -778,21 +588,11 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
               />
             )}
 
-            {/* Standee stick */}
-            <line
-              x1={npcPos.x}
-              y1={npcPos.y + 12}
-              x2={npcPos.x}
-              y2={npcPos.y - 12}
-              stroke="#1f1d1b"
-              strokeWidth="2"
-            />
-
             {/* Avatar circle frame */}
             <circle
               cx={npcPos.x}
-              cy={npcPos.y - 12}
-              r="11"
+              cy={npcPos.y}
+              r="12"
               fill={npc.color}
               stroke="#1f1d1b"
               strokeWidth="2.2"
@@ -800,7 +600,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
             />
 
             {/* Avatar Image clip */}
-            <g transform={`translate(${npcPos.x - 10}, ${npcPos.y - 22})`}>
+            <g transform={`translate(${npcPos.x - 10}, ${npcPos.y - 10})`}>
               <image
                 href={npc.avatar}
                 width="20"
@@ -810,7 +610,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
             </g>
 
             {/* Name label tag */}
-            <g transform={`translate(${npcPos.x}, ${npcPos.y - 28})`}>
+            <g transform={`translate(${npcPos.x}, ${npcPos.y - 18})`}>
               <rect
                 x="-15"
                 y="-6"
@@ -837,7 +637,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
 
             {/* Checkmark bubble if talked */}
             {isTalked && (
-              <g transform={`translate(${npcPos.x + 8}, ${npcPos.y - 18})`}>
+              <g transform={`translate(${npcPos.x + 8}, ${npcPos.y - 8})`}>
                 <circle cx="0" cy="0" r="4.5" fill="#8ea63d" stroke="#1f1d1b" strokeWidth="1" />
                 <polyline points="-2,-0.5 -0.8,1 2,-1" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </g>
@@ -845,7 +645,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
 
             {/* Interactive Speech Prompt */}
             {isClose && !isTalked && (
-              <g transform={`translate(${npcPos.x}, ${npcPos.y - 45})`} className="animate-bounce">
+              <g transform={`translate(${npcPos.x}, ${npcPos.y - 32})`} className="animate-bounce">
                 <rect
                   x="-24"
                   y="-7"
@@ -876,59 +676,35 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
     });
   }
 
-  // 8. Player Avatar Walking Sprite (Only show in exploration mode or active walk)
+  // 8. Player Avatar Walking Sprite
   if (avatarCoords && playerRole && (activeState === 'exploration' || playerPos !== undefined)) {
     renderList.push({
       y: playerPos ? playerPos.y : 25,
       render: () => (
         <g
           key="player-avatar"
-          transform={`translate(${avatarCoords.x}, ${avatarCoords.y - 20 - avatarBobZ})`}
+          transform={`translate(${avatarCoords.x}, ${avatarCoords.y})`}
           className="transition-all duration-300 ease-out"
         >
-          <ellipse
-            cx="0"
-            cy={15 + avatarBobZ}
-            rx="12"
-            ry="5"
-            fill="rgba(31,29,27,0.18)"
-            className="transition-all duration-300"
-            style={{ transform: `scale(${1 - avatarBobZ * 0.05})` }}
-          />
-          <rect
-            x="-24"
-            y="-38"
-            width="48"
-            height="15"
-            rx="4"
-            fill="var(--color-brand-coral)"
-            stroke="#1f1d1b"
-            strokeWidth="1.5"
-          />
-          <text
-            x="0"
-            y="-28"
-            textAnchor="middle"
-            fill="#ffffff"
-            fontSize="7.5"
-            fontWeight="black"
-            fontFamily="sans-serif"
-          >
-            YOU (您)
-          </text>
-          <polygon points="0,-23 -4,-18 4,-18" fill="#1f1d1b" />
+          {/* Shadow */}
           <circle
             cx="0"
-            cy="-6"
-            r="15"
+            cy="2"
+            r="14"
+            fill="rgba(31,29,27,0.18)"
+          />
+          <circle
+            cx="0"
+            cy="0"
+            r="14"
             fill="#ffffff"
             stroke="#1f1d1b"
             strokeWidth="2.5"
             className="shadow-[2px_2px_0px_0px_#1f1d1b]"
           />
-          <g transform="translate(-15, -21)">
+          <g transform="translate(-14, -14)">
             <clipPath id="avatar-clip-25d-v2">
-              <circle cx="15" cy="15" r="13.5" />
+              <circle cx="14" cy="14" r="12.5" />
             </clipPath>
             <image
               href={
@@ -939,16 +715,49 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 playerRole.id === 'environmentalist' ? '/avatar_environmentalist.png' :
                 '/avatar_government.png'
               }
-              width="30"
-              height="30"
+              width="28"
+              height="28"
               clipPath="url(#avatar-clip-25d-v2)"
               className="scale-110"
             />
+          </g>
+          {/* Label tag */}
+          <g transform={`translate(0, -24)`}>
+            <rect
+              x="-20"
+              y="-6"
+              width="40"
+              height="11"
+              rx="3"
+              fill="var(--color-brand-coral)"
+              stroke="#1f1d1b"
+              strokeWidth="1.2"
+              className="shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+            />
+            <text
+              x="0"
+              y="2"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="6"
+              fontWeight="black"
+              fontFamily="sans-serif"
+            >
+              YOU (您)
+            </text>
           </g>
         </g>
       )
     });
   }
+
+  // 11. Crossing Sign Pole (physical inspectable object for crossing segment)
+  renderList.push({
+    y: 20,
+    render: () => (
+      <FlatCrossingSign key="crossing-sign-pole" x={770} y={20} />
+    )
+  });
 
   // Sort Middle Layer entities by Y coordinate (Y-Sorting Depth Occlusion)
   renderList.sort((a, b) => a.y - b.y);
@@ -961,80 +770,48 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
       {/* SVG Canvas */}
       <svg viewBox={`0 0 ${canvasWidth} ${canvasHeight}`} className="w-full h-full relative z-10">
         <defs>
-          <linearGradient id="metal-bridge" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#e57a73" />
-            <stop offset="100%" stopColor="#c55a53" />
-          </linearGradient>
-          <linearGradient id="water-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#add1e6" />
-            <stop offset="100%" stopColor="#87b8d4" />
-          </linearGradient>
           <clipPath id="npc-avatar-clip-circle">
             <circle cx="10" cy="10" r="9.5" />
           </clipPath>
         </defs>
 
-        {/* 1. 3D ISOMETRIC GROUND SLAB (FLOATING ISLAND BASE) - SIDES */}
-        <polygon
-          points={`${pSlabBackLeft.x},${pSlabBackLeft.y} ${pSlabFrontLeft.x},${pSlabFrontLeft.y} ${pSlabFrontLeftB.x},${pSlabFrontLeftB.y} ${pSlabBackLeftB.x},${pSlabBackLeftB.y}`}
-          fill="#c3bead"
-          stroke="#1f1d1b"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        <polygon
-          points={`${pSlabFrontLeft.x},${pSlabFrontLeft.y} ${pSlabFrontRight.x},${pSlabFrontRight.y} ${pSlabFrontRightB.x},${pSlabFrontRightB.y} ${pSlabFrontLeftB.x},${pSlabFrontLeftB.y}`}
-          fill="#a59f8c"
-          stroke="#1f1d1b"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-
-        {/* Top Surface - Divided into 5 Colored Zoning Slabs */}
+        {/* 1. Flat Zoning Slabs */}
         {/* Segment 0: 住宅段 (Beige) */}
-        <polygon
-          points={`${getIsoPoint(30, -110).x},${getIsoPoint(30, -110).y} ${getIsoPoint(280, -110).x},${getIsoPoint(280, -110).y} ${getIsoPoint(280, 110).x},${getIsoPoint(280, 110).y} ${getIsoPoint(30, 110).x},${getIsoPoint(30, 110).y}`}
-          fill="#f5efe1"
-          stroke="#1f1d1b"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <rect x={30} y={30} width={250} height={460} fill="#f5efe1" stroke="#1f1d1b" strokeWidth="2.5" />
         {/* Segment 1: 商業段 (Warm Yellow) */}
-        <polygon
-          points={`${getIsoPoint(280, -110).x},${getIsoPoint(280, -110).y} ${getIsoPoint(480, -110).x},${getIsoPoint(480, -110).y} ${getIsoPoint(480, 110).x},${getIsoPoint(480, 110).y} ${getIsoPoint(280, 110).x},${getIsoPoint(280, 110).y}`}
-          fill="#fbf6e2"
-          stroke="#1f1d1b"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <rect x={280} y={30} width={200} height={460} fill="#fbf6e2" stroke="#1f1d1b" strokeWidth="2.5" />
         {/* Segment 2: 車站節點 (Transit Blue) */}
-        <polygon
-          points={`${getIsoPoint(480, -110).x},${getIsoPoint(480, -110).y} ${getIsoPoint(680, -110).x},${getIsoPoint(680, -110).y} ${getIsoPoint(680, 110).x},${getIsoPoint(680, 110).y} ${getIsoPoint(480, 110).x},${getIsoPoint(480, 110).y}`}
-          fill="#ebf3f7"
-          stroke="#1f1d1b"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <rect x={480} y={30} width={200} height={460} fill="#ebf3f7" stroke="#1f1d1b" strokeWidth="2.5" />
         {/* Segment 3: 主要路口 (Slate Grey) */}
-        <polygon
-          points={`${getIsoPoint(680, -110).x},${getIsoPoint(680, -110).y} ${getIsoPoint(820, -110).x},${getIsoPoint(820, -110).y} ${getIsoPoint(820, 110).x},${getIsoPoint(820, 110).y} ${getIsoPoint(680, 110).x},${getIsoPoint(680, 110).y}`}
-          fill="#f1f3f5"
-          stroke="#1f1d1b"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <rect x={680} y={30} width={140} height={460} fill="#f1f3f5" stroke="#1f1d1b" strokeWidth="2.5" />
         {/* Segment 4: 生態綠帶段 (Natural Green) */}
-        <polygon
-          points={`${getIsoPoint(820, -110).x},${getIsoPoint(820, -110).y} ${getIsoPoint(970, -110).x},${getIsoPoint(970, -110).y} ${getIsoPoint(970, 110).x},${getIsoPoint(970, 110).y} ${getIsoPoint(820, 110).x},${getIsoPoint(820, 110).y}`}
-          fill="#edf3ed"
-          stroke="#1f1d1b"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <rect x={820} y={30} width={150} height={460} fill="#edf3ed" stroke="#1f1d1b" strokeWidth="2.5" />
 
-        {renderGridLines()}
+        {/* Major Tainan Parkway Segment Headers (Reference: tainanparkway.org/latest_design) */}
+        {/* 北段 Block */}
+        <g>
+          <rect x={32} y={35} width={446} height={20} rx="4" fill="#8ea63d" stroke="#1f1d1b" strokeWidth="1.8" className="shadow-[1.5px_1.5px_0px_0px_#1f1d1b]" />
+          <text x={255} y={48} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="black" fontFamily="sans-serif">
+            【北段】三校共構全綠帶公園 (和緯路 - 小東路)
+          </text>
+        </g>
+        {/* 中段 Block */}
+        <g>
+          <rect x={482} y={35} width={196} height={20} rx="4" fill="#de7861" stroke="#1f1d1b" strokeWidth="1.8" className="shadow-[1.5px_1.5px_0px_0px_#1f1d1b]" />
+          <text x={580} y={48} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="black" fontFamily="sans-serif">
+            【中段】府城人文地景散策 (小東路 - 民族路)
+          </text>
+        </g>
+        {/* 南段 Block */}
+        <g>
+          <rect x={682} y={35} width={286} height={20} rx="4" fill="#4d7082" stroke="#1f1d1b" strokeWidth="1.8" className="shadow-[1.5px_1.5px_0px_0px_#1f1d1b]" />
+          <text x={825} y={48} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="black" fontFamily="sans-serif">
+            【南段】市民綠色大道 (民族路 - 生產路)
+          </text>
+        </g>
 
         {/* 2. CONTINUOUS GREENWAY ROADBED/PATHS */}
+        {/* Grass lawn lane */}
         <path
           d={getWindingPathD(-28)}
           stroke="#acd0a2"
@@ -1043,6 +820,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {/* Pedestrian walking path */}
         <path
           d={getWindingPathD(25)}
           stroke="#ebdcb9"
@@ -1061,6 +839,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinejoin="round"
           opacity="0.7"
         />
+        {/* Bicycle lane */}
         <path
           d={getWindingPathD(-2)}
           stroke="#c7dce7"
@@ -1079,24 +858,13 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           strokeLinejoin="round"
         />
 
-        {/* Flat Ground strategy decorations */}
+        {/* Rain garden strategy decorations */}
         {selections[4] === 'b' && (
-          <polygon
-            points={`
-              ${getIsoPoint(860, -35).x},${getIsoPoint(860, -35).y}
-              ${getIsoPoint(920, -50).x},${getIsoPoint(920, -50).y}
-              ${getIsoPoint(940, -20).x},${getIsoPoint(940, -20).y}
-              ${getIsoPoint(875, -10).x},${getIsoPoint(875, -10).y}
-            `}
-            fill="url(#water-gradient)"
-            stroke="#1f1d1b"
-            strokeWidth="1.2"
-            strokeLinejoin="round"
-          />
+          <rect x={870} y={230} width={60} height={25} rx="12" fill="#87b8d4" stroke="#1f1d1b" strokeWidth="1.5" />
         )}
         {selections[4] === 'c' && (
           <path
-            d="M 850,210 Q 890,170 940,195"
+            d="M 850,260 Q 890,220 940,245"
             fill="none"
             stroke="#79afd3"
             strokeWidth="1.5"
@@ -1105,41 +873,18 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           />
         )}
         
-        {/* Road intersection markings */}
-        <polygon
-          points={`
-            ${getIsoPoint(755, -110).x},${getIsoPoint(755, -110).y}
-            ${getIsoPoint(800, -110).x},${getIsoPoint(800, -110).y}
-            ${getIsoPoint(800, 110).x},${getIsoPoint(800, 110).y}
-            ${getIsoPoint(755, 110).x},${getIsoPoint(755, 110).y}
-          `}
-          fill="#374151"
-          stroke="#1f1d1b"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        <line x1={getIsoPoint(762, -15).x} y1={getIsoPoint(762, -15).y} x2={getIsoPoint(792, -32).x} y2={getIsoPoint(792, -32).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
-        <line x1={getIsoPoint(767, 10).x} y1={getIsoPoint(767, 10).y} x2={getIsoPoint(797, -7).x} y2={getIsoPoint(797, -7).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
-        <line x1={getIsoPoint(772, 35).x} y1={getIsoPoint(772, 35).y} x2={getIsoPoint(802, 18).x} y2={getIsoPoint(802, 18).y} stroke="#ffffff" strokeWidth="3" opacity="0.9" />
+        {/* Road intersection asphalt band */}
+        <rect x={755} y={30} width={45} height={460} fill="#374151" stroke="#1f1d1b" strokeWidth="1.5" />
+        {/* Zebra crossing markings */}
+        <FlatZebraCrossing x={777} y={260} w={40} d={120} />
 
         {selections[3] === 'b' && (
-          <polygon
-            points={`
-              ${getIsoPoint(757, -15).x},${getIsoPoint(757, -15).y}
-              ${getIsoPoint(798, -35).x},${getIsoPoint(798, -35).y}
-              ${getIsoPoint(798, 12).x},${getIsoPoint(798, 12).y}
-              ${getIsoPoint(757, 32).x},${getIsoPoint(757, 32).y}
-            `}
-            fill="#8ea63d"
-            stroke="#1f1d1b"
-            strokeWidth="1"
-            opacity="0.55"
-          />
+          <rect x={757} y={220} width={41} height={80} fill="#8ea63d" stroke="#1f1d1b" strokeWidth="1" opacity="0.3" />
         )}
         
         {selections[1] === 'a' && (
           <path
-            d={getElevatedBridgeD(350, 480, 5, 0)}
+            d={getWindingPathD(5).split(' L').slice(60, 100).join(' L')}
             stroke="#dfd9c8"
             strokeWidth="22"
             fill="none"
@@ -1148,68 +893,26 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
           />
         )}
         {selections[1] === 'c' && (
-          <polygon
-            points={`
-              ${getIsoPoint(395, 35).x},${getIsoPoint(395, 35).y}
-              ${getIsoPoint(445, 15).x},${getIsoPoint(445, 15).y}
-              ${getIsoPoint(455, 35).x},${getIsoPoint(455, 35).y}
-              ${getIsoPoint(405, 55).x},${getIsoPoint(405, 55).y}
-            `}
-            fill="none"
-            stroke="#f59e0b"
-            strokeWidth="1.5"
-            strokeDasharray="3,3"
-          />
+          <rect x={395} y={280} width={50} height={20} rx="4" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3,3" />
         )}
 
         {selections[2] === 'b' && (
           <g>
-            <ellipse
-              cx={getIsoPoint(640, 25, 0).x}
-              cy={getIsoPoint(640, 25, 0).y}
-              rx="30"
-              ry="15"
-              fill="#e5e7eb"
-              stroke="#1f1d1b"
-              strokeWidth="1.2"
-            />
-            <ellipse
-              cx={getIsoPoint(640, 25, 0).x}
-              cy={getIsoPoint(640, 25, 0).y}
-              rx="12"
-              ry="6"
-              fill="#93c5fd"
-              stroke="#1f1d1b"
-              strokeWidth="1"
-            />
+            <circle cx={get2DPoint(640, 25).x} cy={get2DPoint(640, 25).y} r="20" fill="#e5e7eb" stroke="#1f1d1b" strokeWidth="1.2" />
+            <circle cx={get2DPoint(640, 25).x} cy={get2DPoint(640, 25).y} r="8" fill="#93c5fd" stroke="#1f1d1b" strokeWidth="1" />
           </g>
         )}
 
-        {/* 1.5 Proposed Continuous Elevated Bike Path - Shown in initial/exploration states */}
+        {/* Proposed Continuous Elevated Bike Path - Shown in initial/exploration states */}
         {(activeState === 'initial' || activeState === 'exploration') && (
           <g>
-            {/* Supporting columns */}
-            {[120, 280, 440, 600, 760, 920].map((xVal, idx) => (
-              <line
-                key={`prop-col-${idx}`}
-                x1={getIsoPoint(xVal, -4, 0).x}
-                y1={getIsoPoint(xVal, -4, 0).y}
-                x2={getIsoPoint(xVal, -4, 40).x}
-                y2={getIsoPoint(xVal, -4, 40).y}
-                stroke="#1f1d1b"
-                strokeWidth="2"
-                opacity="0.3"
-                strokeDasharray="2,2"
-              />
-            ))}
-            {/* proposed path line */}
             <path
-              d={getElevatedBridgeD(30, 970, -4, 40)}
+              d={getWindingPathD(-4)}
               stroke="#d37b70"
               strokeWidth="4"
               strokeDasharray="4,4"
               fill="none"
-              opacity="0.5"
+              opacity="0.55"
             />
           </g>
         )}
@@ -1221,7 +924,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
         {segments.map(seg => {
           const isSelected = activeSegmentId === seg.id;
           const hasInsight = getSegmentCollected(seg.id);
-          const anchorPoint = getIsoPoint(seg.x, 45, 0);
+          const anchorPoint = get2DPoint(seg.x, 60);
 
           return (
             <g
@@ -1233,7 +936,7 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 <circle
                   cx={anchorPoint.x}
                   cy={anchorPoint.y}
-                  r="28"
+                  r="20"
                   fill="none"
                   stroke="var(--color-brand-coral)"
                   strokeWidth="2"
@@ -1245,62 +948,55 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 x1={anchorPoint.x}
                 y1={anchorPoint.y}
                 x2={anchorPoint.x}
-                y2={anchorPoint.y - 38}
+                y2={anchorPoint.y - 25}
                 stroke="#1f1d1b"
-                strokeWidth="2.5"
+                strokeWidth="2"
                 strokeLinecap="round"
-              />
-              <ellipse
-                cx={anchorPoint.x}
-                cy={anchorPoint.y + 1}
-                rx="6"
-                ry="3"
-                fill="rgba(31,29,27,0.25)"
               />
               <circle
                 cx={anchorPoint.x}
                 cy={anchorPoint.y}
-                r="4.5"
+                r="3.5"
                 fill={hasInsight ? '#8ea63d' : '#1f1d1b'}
                 stroke="#1f1d1b"
-                strokeWidth="1.5"
+                strokeWidth="1.2"
               />
               <circle
                 cx={anchorPoint.x}
-                cy={anchorPoint.y - 38}
-                r="13"
+                cy={anchorPoint.y - 25}
+                r="10"
                 fill={isSelected ? '#f3ce6b' : hasInsight ? '#8ea63d' : '#ffffff'}
                 stroke="#1f1d1b"
-                strokeWidth="2.5"
+                strokeWidth="2"
                 className="transition-transform duration-200 group-hover:scale-110 shadow-flat-pop"
               />
               <text
                 x={anchorPoint.x}
-                y={anchorPoint.y - 34}
+                y={anchorPoint.y - 22}
                 textAnchor="middle"
-                fontSize="11.5"
+                fontSize="9"
                 className="select-none pointer-events-none"
               >
                 {seg.icon}
               </text>
-              <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y - 62})`}>
+              <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y - 42})`}>
                 <rect
-                  x="-35"
-                  y="-11"
-                  width="70"
-                  height="18"
-                  rx="4"
+                  x="-28"
+                  y="-9"
+                  width="56"
+                  height="15"
+                  rx="3.5"
                   fill="#ffffff"
                   stroke={isSelected ? 'var(--color-brand-coral)' : '#1f1d1b'}
-                  strokeWidth="2"
-                  className="shadow-[1.5px_1.5px_0px_0px_#1f1d1b]"
+                  strokeWidth="1.8"
+                  className="shadow-[1px_1px_0px_0px_#1f1d1b]"
                 />
                 <text
                   x="0"
-                  y="2"
+                  y="1.5"
                   textAnchor="middle"
                   fill="#1f1d1b"
-                  fontSize="8.5"
+                  fontSize="7.5"
                   fontWeight="black"
                   fontFamily="sans-serif"
                 >
@@ -1308,26 +1004,26 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                 </text>
               </g>
 
-              {/* Pulsing warning conflict marker - Shown in exploration mode for uncollected segments */}
+              {/* Pulsing warning conflict marker */}
               {!hasInsight && activeState === 'exploration' && (
-                <g transform={`translate(${anchorPoint.x + 15}, ${anchorPoint.y - 48})`} className="animate-pulse">
-                  <circle cx="0" cy="0" r="7.2" fill="#f3ce6b" stroke="#1f1d1b" strokeWidth="1.2" />
-                  <text x="0" y="3.2" textAnchor="middle" fill="#1f1d1b" fontSize="9" fontWeight="black">!</text>
+                <g transform={`translate(${anchorPoint.x + 12}, ${anchorPoint.y - 32})`} className="animate-pulse">
+                  <circle cx="0" cy="0" r="5.5" fill="#f3ce6b" stroke="#1f1d1b" strokeWidth="1" />
+                  <text x="0" y="2.5" textAnchor="middle" fill="#1f1d1b" fontSize="7" fontWeight="black">!</text>
                 </g>
               )}
 
               {/* Selected Strategy Tag Badge */}
               {selections[seg.id] && (
-                <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y + 14})`}>
+                <g transform={`translate(${anchorPoint.x}, ${anchorPoint.y + 12})`}>
                   <rect
-                    x="-42"
-                    y="-6"
-                    width="84"
-                    height="12"
-                    rx="3"
+                    x="-36"
+                    y="-5"
+                    width="72"
+                    height="10"
+                    rx="2"
                     fill="#e2f0d9"
                     stroke="#1f1d1b"
-                    strokeWidth="1.2"
+                    strokeWidth="1"
                     className="shadow-[1px_1px_0px_0px_#1f1d1b]"
                   />
                   <text
@@ -1335,15 +1031,15 @@ export const Greenway25DMap: React.FC<Greenway25DMapProps> = ({
                     y="2"
                     textAnchor="middle"
                     fill="#3e5f4c"
-                    fontSize="7"
+                    fontSize="6"
                     fontWeight="extrabold"
                     fontFamily="sans-serif"
                   >
-                    {seg.id === 0 ? (selections[0] === 'a' ? '平面慢行' : selections[0] === 'b' ? '局部高架 + 綠牆遮蔽' : '安寧生活緩衝帶') :
-                     seg.id === 1 ? (selections[1] === 'a' ? '地面共享街道' : selections[1] === 'b' ? '自行車停靠點' : selections[1] === 'c' ? '遮蔭廣場' : '外送臨停區') :
-                     seg.id === 2 ? (selections[2] === 'a' ? 'YouBike + transit' : selections[2] === 'b' ? 'pedestrian priority' : 'slow mobility zone') :
-                     seg.id === 3 ? (selections[3] === 'a' ? '局部高架穿越' : selections[3] === 'b' ? '受保護平面穿越' : '人車分流專用號誌') :
-                     (selections[4] === 'a' ? '連續樹冠' : selections[4] === 'b' ? '雨水花園' : selections[4] === 'c' ? '透水鋪面' : '生態降溫廊道')}
+                    {seg.id === 0 ? (selections[0] === 'a' ? '平面慢行' : selections[0] === 'b' ? '局部高架+綠牆' : '安寧緩衝帶') :
+                     seg.id === 1 ? (selections[1] === 'a' ? '地面共享街' : selections[1] === 'b' ? '單車停靠點' : selections[1] === 'c' ? '遮蔭廣場' : '外送臨停區') :
+                     seg.id === 2 ? (selections[2] === 'a' ? 'YouBike轉乘' : selections[2] === 'b' ? '行人優先廣場' : '慢行交通區') :
+                     seg.id === 3 ? (selections[3] === 'a' ? '局部高架跨越' : selections[3] === 'b' ? '保護平面跨越' : '人車分流號誌') :
+                     (selections[4] === 'a' ? '連續樹冠' : selections[4] === 'b' ? '雨水花園' : selections[4] === 'c' ? '透水鋪面' : '生態降溫廊')}
                   </text>
                 </g>
               )}

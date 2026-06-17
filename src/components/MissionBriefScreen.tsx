@@ -59,7 +59,7 @@ export const MissionBriefScreen: React.FC<MissionBriefScreenProps> = ({
                 <CheckCircle size={14} className="text-emerald-600 shrink-0 mt-0.5" />
                 <div className="text-left">
                   <h5 className="text-[9px] font-extrabold text-[#1f1d1b]">{card.title}</h5>
-                  <p className="text-[8.5px] text-gray-500 leading-normal line-clamp-2 mt-0.5">"{card.text}"</p>
+                  <p className="text-[8.5px] text-gray-500 leading-normal line-clamp-2 mt-0.5">&quot;{card.text}&quot;</p>
                 </div>
               </div>
             ))}
